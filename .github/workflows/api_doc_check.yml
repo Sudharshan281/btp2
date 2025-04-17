@@ -11,6 +11,10 @@ jobs:
     permissions:
       contents: write # Needed to commit the report
       pull-requests: write # Needed to create the PR
+    env:
+      BASE_SHA ${{ github.sha }}
+      HEAD_SHA ${{ github.sha }}
+      CHANGED_FILES ${{ steps.changed-files.outputs.changed_py_files }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,15 +55,10 @@ jobs:
           echo "Analyzing changes in: ${{ steps.changed-files.outputs.changed_py_files }}"
           # Note: BASE_SHA is captured in the previous step's environment, need to pass it explicitly
           # The script now handles setting the 'report_content' output via ::set-output
-          python scripts/analyze_py_changes.py \
-            --base-ref $BASE_SHA \
-            --head-ref ${{ github.sha }} \
-            --files "${{ steps.changed-files.outputs.changed_py_files }}"
+          python scripts/analyze_py_changes.py --base-ref $BASE_SHA --head-ref ${{ github.sha }} --files "${{ steps.changed-files.outputs.changed_py_files }}"
           echo "Analysis script finished."
 
       - name: Create Pull Request with Report
-        # The python script outputs an empty report_content if no changes or no files,
-        # so this condition correctly skips PR creation if there's nothing to report.
         if: steps.analyze.outputs.report_content != '' # Only run if analysis produced a report
         uses: peter-evans/create-pull-request@v6
         with:
