@@ -1,6 +1,6 @@
 # users.py
 
 # Added a new function for testing
-def trigger_documentation_update():
-    """This function is to test the documentation update process."""
+def new_api_function():
+    """This is a new API function to test the updated workflow."""
     pass
