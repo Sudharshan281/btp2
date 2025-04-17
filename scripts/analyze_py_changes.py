@@ -49,9 +49,21 @@ if __name__ == "__main__":
     old_file = sys.argv[1]
     new_file = sys.argv[2]
 
-    if not os.path.exists(old_file) or not os.path.exists(new_file):
-        print("Error: One or both files do not exist.")
+    if not os.path.exists(old_file):
+        print(f"Warning: {old_file} does not exist. Assuming all functions are new.")
+        old_tree = ast.parse("")
+    else:
+        with open(old_file, 'r') as f:
+            old_content = f.read()
+        old_tree = parse_ast(old_content)
+
+    if not os.path.exists(new_file):
+        print(f"Error: {new_file} does not exist.")
         sys.exit(1)
+    else:
+        with open(new_file, 'r') as f:
+            new_content = f.read()
+        new_tree = parse_ast(new_content)
 
     changes = analyze_changes(old_file, new_file)
     print("Changes detected:")
