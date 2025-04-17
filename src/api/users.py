@@ -32,3 +32,8 @@ def delete_user(user_id: int):
     """Deletes a user."""
     print(f"Deleting user: {user_id}")
     return {"status": "deleted"}
+
+def update_user(user_id: int, name: str):
+    """Updates a user's name."""
+    print(f"Updating user {user_id} to {name}")
+    return {"id": user_id, "name": name}
