@@ -1,82 +1,40 @@
-name: Check for API Documentation Updates
+name: API Documentation Update
 
 on:
   push:
     branches:
-      - main # Or your primary development branch
+      - main
+      - develop
+  pull_request:
+    types:
+      - closed
 
 jobs:
-  detect-api-changes:
+  update-docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Needed to commit the report
-      pull-requests: write # Needed to create the PR
-    env:
-      BASE_SHA ${{ github.sha }}
-      HEAD_SHA ${{ github.sha }}
-      CHANGED_FILES ${{ steps.changed-files.outputs.changed_py_files }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          # Fetch history needed for diffing against the base branch
-          fetch-depth: 0
+          node-version: '16'
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x' # Use a recent Python 3 version
-
-      - name: Get changed Python files
-        id: changed-files
-        run: |
-          # Get the base commit SHA for the push event
-          # For pushes to the default branch, compare against the previous commit
-          # For pushes to other branches, this might need adjustment based on workflow
-          # This example assumes pushing directly to 'main' or merging into it
-          BASE_SHA=$(git rev-parse HEAD~1) # Simple case: compare with parent
-          # Alternative for comparing against the target branch of a merge commit (more robust)
-          # if [[ "${{ github.event_name }}" == "push" && $(git cat-file -p HEAD | grep -c '^parent ') -gt 1 ]]; then
-          #   BASE_SHA=$(git rev-parse HEAD^2) # Second parent is the tip of the merged branch
-          # fi
-          # Fallback if BASE_SHA is empty (e.g., first commit) - compare against empty tree
-          # BASE_SHA=${BASE_SHA:-$(git hash-object -t tree /dev/null)}
-
-          echo "Comparing HEAD (${{ github.sha }}) against BASE ($BASE_SHA)"
-          CHANGED_PY_FILES=$(git diff --name-only $BASE_SHA HEAD -- '*.py' | xargs)
-          echo "changed_py_files=${CHANGED_PY_FILES}" >> $GITHUB_OUTPUT
-          echo "Detected changed Python files: $CHANGED_PY_FILES"
+      - name: Install dependencies
+        run: npm install
 
       - name: Analyze Python Changes
-        id: analyze
-        if: steps.changed-files.outputs.changed_py_files != '' # Only run if Python files changed
+        run: python scripts/analyze_py_changes.py src/api/users_old.py src/api/users.py
+
+      - name: Run API Documentation Update
+        run: node scripts/update_docs.js
+
+      - name: Commit and push changes
         run: |
-          # Execute the Python analysis script
-          echo "Analyzing changes in: ${{ steps.changed-files.outputs.changed_py_files }}"
-          # Note: BASE_SHA is captured in the previous step's environment, need to pass it explicitly
-          # The script now handles setting the 'report_content' output via ::set-output
-          python scripts/analyze_py_changes.py --base-ref $BASE_SHA --head-ref ${{ github.sha }} --files "${{ steps.changed-files.outputs.changed_py_files }}"
-          echo "Analysis script finished."
-
-      - name: Create Pull Request with Report
-        if: steps.analyze.outputs.report_content != '' # Only run if analysis produced a report
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: Generate API change report"
-          branch: docs-update/api-changes-${{ github.run_id }}
-          delete-branch: true
-          title: "Potential API Documentation Updates Required"
-          body: |
-            Automated analysis detected potential changes in Python API files that might require documentation updates.
-
-            Please review the following changes and update the relevant Markdown documentation files manually:
-
-            ${{ steps.analyze.outputs.report_content }}
-
-            *Note: This report lists added/removed functions and classes. More complex changes (e.g., parameter modifications) are not yet detected in this version.*
-          add-paths: |
-            docs/api_change_report.md # Path where the report will be saved
-          # Optional: Add labels or assignees
-          # labels: documentation, automated-pr
-          # assignees: your-username
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b docs-update-$(date +%s)
+          git add .
+          git commit -m "chore: Automatically update API documentation"
+          git push origin HEAD
