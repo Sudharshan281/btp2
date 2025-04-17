@@ -53,8 +53,10 @@ if __name__ == "__main__":
         print(f"Warning: {old_file} does not exist. Assuming all functions are new.")
         old_tree = ast.parse("")
     else:
-        with open(old_file, 'r') as f:
-            old_content = f.read()
+        old_content = ""
+        if os.path.exists(old_file):
+            with open(old_file, 'r') as f:
+                old_content = f.read()
         old_tree = parse_ast(old_content)
 
     if not os.path.exists(new_file):
