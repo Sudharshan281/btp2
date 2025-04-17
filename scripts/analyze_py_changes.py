@@ -58,12 +58,13 @@ if __name__ == "__main__":
 
         try:
             # Use Git to fetch the previous version of the file
+            # Fetch the previous version of the file using Git
             old_content = subprocess.check_output(
-                ["git", "show", f"HEAD~1:{old_file}"], text=True
+                ["git", "show", f"HEAD:{new_file}"], text=True
             )
             old_tree = parse_ast(old_content)
         except subprocess.CalledProcessError:
-            print(f"Warning: Could not fetch previous version of {old_file}. Using an empty AST for comparison.")
+            print(f"Warning: Could not fetch previous version of {new_file}. Using an empty AST for comparison.")
             old_tree = ast.parse("")
 
     if not os.path.exists(new_file):
