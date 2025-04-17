@@ -27,3 +27,8 @@ def create_user(name: str):
     """Creates a new user."""
     print(f"Creating user: {name}")
     return {"name": name, "id": 3}
+
+def delete_user(user_id: int):
+    """Deletes a user."""
+    print(f"Deleting user: {user_id}")
+    return {"status": "deleted"}
