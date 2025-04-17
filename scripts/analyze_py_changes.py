@@ -57,7 +57,10 @@ if __name__ == "__main__":
         if os.path.exists(old_file):
             with open(old_file, 'r') as f:
                 old_content = f.read()
-        old_tree = parse_ast(old_content)
+            old_tree = parse_ast(old_content)
+        else:
+            print(f"Warning: {old_file} does not exist. Skipping old file comparison.")
+            old_tree = ast.parse("")
 
     if not os.path.exists(new_file):
         print(f"Error: {new_file} does not exist.")
