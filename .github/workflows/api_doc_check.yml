@@ -24,8 +24,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Get list of modified files
+        run: |
+          git diff --name-only HEAD~1 > modified_files.txt
+
       - name: Analyze Python Changes
-        run: python scripts/analyze_py_changes.py src/api/users_old.py src/api/users.py
+        run: |
+          while IFS= read -r file; do
+            if [[ $file == *.py ]]; then
+              python scripts/analyze_py_changes.py "$file"
+            fi
+          done < modified_files.txt
 
       - name: Run API Documentation Update
         run: node scripts/update_docs.js
