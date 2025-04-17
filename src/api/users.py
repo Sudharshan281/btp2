@@ -1,6 +1,6 @@
 # users.py
 
 # Added a new function for testing
-def new_api_function():
-    """This is a new API function to test the updated workflow."""
+def another_test_function():
+    """This is another test function to verify the workflow."""
     pass
