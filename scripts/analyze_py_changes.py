@@ -58,9 +58,9 @@ if __name__ == "__main__":
 
         try:
             # Use Git to fetch the previous version of the file
-            # Fetch the previous version of the file using Git
+            # Fetch the previous version of the file using Git diff
             old_content = subprocess.check_output(
-                ["git", "show", f"HEAD:{new_file}"], text=True
+                ["git", "diff", "HEAD~1", "--", new_file], text=True
             )
             old_tree = parse_ast(old_content)
         except subprocess.CalledProcessError:
