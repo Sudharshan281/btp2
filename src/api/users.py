@@ -1,6 +1,6 @@
 # users.py
 
 # Added a new function for testing
-def final_trigger_function():
-    """This is the final trigger function to test documentation update."""
+def trigger_documentation_update():
+    """This function is to test the documentation update process."""
     pass
