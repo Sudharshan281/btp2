@@ -54,12 +54,12 @@ if __name__ == "__main__":
         old_tree = ast.parse("")
     else:
         old_content = ""
-        if os.path.exists(old_file):
+        try:
             with open(old_file, 'r') as f:
                 old_content = f.read()
             old_tree = parse_ast(old_content)
-        else:
-            print(f"Warning: {old_file} does not exist. Creating a placeholder AST.")
+        except FileNotFoundError:
+            print(f"Warning: {old_file} does not exist. Using an empty AST for comparison.")
             old_tree = ast.parse("")
 
     if not os.path.exists(new_file):
