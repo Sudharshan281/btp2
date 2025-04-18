@@ -120,6 +120,43 @@ Please review and update the README.md file to reflect these changes.
         print(f"Title: {issue_title}")
         print(f"Body: {issue_body}")
 
+def create_api_failure_issue(py_file: str, error: str):
+    """Create a GitHub issue when API key fails."""
+    token = get_github_token()
+    repo_name = get_repo_name()
+    
+    if not token or not repo_name:
+        print("Missing GitHub token or repository name")
+        print("Would create issue with the following content:")
+        print(f"Title: API Key Failure for {os.path.basename(py_file)}")
+        print(f"Error: {error}")
+        return
+        
+    try:
+        g = Github(token)
+        repo = g.get_repo(repo_name)
+        
+        issue_title = f"API Key Failure for {os.path.basename(py_file)}"
+        issue_body = f"""
+The API key failed while processing changes in `{py_file}`.
+
+Error: {error}
+
+Please check the API key configuration and try again.
+"""
+        
+        repo.create_issue(
+            title=issue_title,
+            body=issue_body,
+            labels=["bug", "api"]
+        )
+        print(f"Created issue for API key failure")
+    except Exception as e:
+        print(f"Error creating issue: {str(e)}")
+        print("Would create issue with the following content:")
+        print(f"Title: {issue_title}")
+        print(f"Body: {issue_body}")
+
 def analyze_changes(file_path: str):
     """Analyze changes in a Python file and check if README needs updates."""
     print(f"Analyzing changes for {file_path}")
@@ -180,4 +217,8 @@ if __name__ == "__main__":
         sys.exit(1)
         
     file_path = sys.argv[1]
-    analyze_changes(file_path)
+    try:
+        analyze_changes(file_path)
+    except Exception as e:
+        print(f"Error analyzing changes: {str(e)}")
+        create_api_failure_issue(file_path, str(e))
