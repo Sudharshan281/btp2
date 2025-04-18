@@ -84,14 +84,14 @@ def calculate_gcd(a: int, b: int) -> int:
 
 def calculate_lcm(a: int, b: int) -> int:
     """
-    Calculate the Least Common Multiple (LCM) of two numbers.
+    Calculate the least common multiple (LCM) of two numbers.
     
     Args:
         a (int): First number
         b (int): Second number
         
     Returns:
-        int: The LCM of a and b
+        int: The least common multiple of a and b
     """
     if a == 0 or b == 0:
         return 0
@@ -139,6 +139,18 @@ def calculate_square_root(number: float) -> float:
     if number < 0:
         raise ValueError("Cannot calculate square root of negative number")
     return number ** 0.5
+
+def calculate_cube(number: float) -> float:
+    """
+    Calculate the cube of a number.
+    
+    Args:
+        number (float): The number to calculate the cube of
+        
+    Returns:
+        float: The cube of the number
+    """
+    return number ** 3
 
 class Calculator:
     """A simple calculator class."""
