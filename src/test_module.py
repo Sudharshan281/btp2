@@ -173,17 +173,23 @@ def calculate_logarithm(number: float, base: float = 10.0) -> float:
         raise ValueError("Number and base must be positive")
     return math.log(number, base)
 
-def calculate_exponential(x: float) -> float:
-    """
-    Calculate the exponential of a number.
+def calculate_exponential(base: float, exponent: float) -> float:
+    """Calculate the exponential of a number.
     
     Args:
-        x (float): The number to calculate the exponential of
-        
+        base (float): The base number.
+        exponent (float): The exponent to raise the base to.
+    
     Returns:
-        float: The exponential of x (e^x)
+        float: The result of base raised to the power of exponent.
+    
+    Examples:
+        >>> calculate_exponential(2, 3)
+        8.0
+        >>> calculate_exponential(5, 2)
+        25.0
     """
-    return math.exp(x)
+    return pow(base, exponent)
 
 def calculate_sine(x: float) -> float:
     """
