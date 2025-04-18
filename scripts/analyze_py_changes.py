@@ -386,24 +386,24 @@ def create_readme_issue(py_file: str, changes: List[Dict[str, Any]]):
         return
         
     g = Github(token)
-    repo = g.get_repo(repo_name)
-    
-    # Format changes for the issue
-    changes_text = "\n".join([
-        f"- {change['type'].title()}: {change['name']} ({change['description']})"
-        for change in changes
-    ])
-    
-    issue_title = f"README Update Needed for {os.path.basename(py_file)}"
-    issue_body = f"""
+    try:
+        repo = g.get_repo(repo_name)
+        
+        # Format changes for the issue
+        changes_text = "\n".join([
+            f"- {change['type'].title()}: {change['name']} ({change.get('description', '')})"
+            for change in changes
+        ])
+        
+        issue_title = f"README Update Needed for {os.path.basename(py_file)}"
+        issue_body = f"""
 The following changes in `{py_file}` require updates to the README.md file:
 
 {changes_text}
 
 Please review and update the README.md file to reflect these changes.
 """
-    
-    try:
+        
         repo.create_issue(
             title=issue_title,
             body=issue_body,
@@ -411,7 +411,7 @@ Please review and update the README.md file to reflect these changes.
         )
         print(f"Created issue for README updates")
     except Exception as e:
-        print(f"Error creating issue: {e}")
+        print(f"Error creating issue: {str(e)}")
 
 def analyze_changes(file_path: str):
     """Analyze changes in a Python file and check if README needs updates."""
@@ -442,7 +442,7 @@ def analyze_changes(file_path: str):
 def generate_documentation_with_llm(changes):
     """Generate documentation using OpenAI's GPT model."""
     try:
-        client = openai.OpenAI(api_key=get_openai_key())
+        client = openai.OpenAI()  # Will use OPENAI_API_KEY from environment
         
         prompt = f"""
         Please analyze these code changes and suggest documentation updates:
