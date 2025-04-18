@@ -60,6 +60,25 @@ def calculate_factorial(n: int) -> int:
         return 1
     return n * calculate_factorial(n - 1)
 
+def calculate_fibonacci(n: int) -> int:
+    """
+    Calculate the nth Fibonacci number.
+    
+    Args:
+        n (int): The position in the Fibonacci sequence
+        
+    Returns:
+        int: The nth Fibonacci number
+        
+    Raises:
+        ValueError: If n is negative
+    """
+    if n < 0:
+        raise ValueError("Fibonacci sequence is not defined for negative numbers")
+    if n <= 1:
+        return n
+    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
+
 class MathOperations:
     """
     A class for performing mathematical operations.
