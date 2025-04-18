@@ -32,7 +32,8 @@ jobs:
           pip install -r requirements.txt
           pip install PyGithub
       
-      - name: Debug Git History
+      - name: Check for Python file changes
+        id: check_changes
         run: |
           echo "Current commit:"
           git log -1 --pretty=format:"%H %s"
@@ -40,28 +41,27 @@ jobs:
           git log -2 --pretty=format:"%H %s"
           echo "Modified files:"
           git diff --name-only HEAD^ HEAD
-      
-      - name: Check for Python file changes
-        id: check_changes
-        run: |
-          MODIFIED_FILES=$(git diff --name-only HEAD^ HEAD -- 'src/**/*.py')
+          
+          # Get modified Python files
+          MODIFIED_FILES=$(git diff --name-only HEAD^ HEAD | grep 'src/.*\.py$')
           echo "Modified Python files: $MODIFIED_FILES"
+          
           if [ -n "$MODIFIED_FILES" ]; then
             echo "modified_files=$MODIFIED_FILES" >> $GITHUB_OUTPUT
             echo "changes_detected=true" >> $GITHUB_OUTPUT
           else
             echo "changes_detected=false" >> $GITHUB_OUTPUT
           fi
-      
-      - name: Analyze changes and create issue if needed
+
+      - name: Test API key
         if: steps.check_changes.outputs.changes_detected == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/test_api.py
+
+      - name: Process changes
+        if: steps.check_changes.outputs.changes_detected == 'true'
         run: |
           for file in ${{ steps.check_changes.outputs.modified_files }}; do
-            echo "Analyzing $file"
+            echo "Processing $file"
             echo "Current content:"
             cat "$file"
             echo "Previous content:"
