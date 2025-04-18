@@ -47,8 +47,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          IFS=$'\n'
-          for file in ${{ steps.changed-files.outputs.files }}; do
-            echo "Analyzing changes in $file"
-            python scripts/analyze_py_changes.py "$file"
-          done
+          # Test API key first
+          python scripts/test_api.py
+          
+          # Process each changed file
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then
+              echo "Analyzing changes in $file"
+              python scripts/analyze_py_changes.py "$file"
+            fi
+          done <<< "${{ steps.changed-files.outputs.files }}"
