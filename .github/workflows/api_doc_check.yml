@@ -55,10 +55,16 @@ jobs:
 
       - name: Test API key
         if: steps.check_changes.outputs.changes_detected == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python scripts/test_api.py
 
       - name: Process changes
         if: steps.check_changes.outputs.changes_detected == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           for file in ${{ steps.check_changes.outputs.modified_files }}; do
             echo "Processing $file"

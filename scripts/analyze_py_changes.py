@@ -22,6 +22,7 @@ def get_github_client() -> Optional[Github]:
     """Get authenticated GitHub client."""
     token, repo = get_env_vars()
     if not token or not repo:
+        print("ERROR: Cannot create GitHub client - missing credentials")
         return None
     
     try:
@@ -259,7 +260,7 @@ Please check the API key configuration and try again.
         print(f"Body: {issue_body}")
 
 def create_github_issue(title: str, body: str) -> None:
-    """Create a GitHub issue with the specified title and body."""
+    """Create a GitHub issue with the given title and body."""
     token, repo_name = get_env_vars()
     if not token or not repo_name:
         print("ERROR: Cannot create issue - missing GitHub credentials")
@@ -271,6 +272,7 @@ def create_github_issue(title: str, body: str) -> None:
     try:
         g = get_github_client()
         if not g:
+            print("ERROR: Failed to get GitHub client")
             return
             
         repo = g.get_repo(repo_name)
