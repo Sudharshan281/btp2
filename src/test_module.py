@@ -50,6 +50,24 @@ def calculate_factorial(n: int) -> int:
         raise ValueError("Factorial is not defined for negative numbers")
     return 1 if n <= 1 else n * calculate_factorial(n - 1)
 
+def calculate_fibonacci(n: int) -> int:
+    """Calculate the nth Fibonacci number.
+    
+    Args:
+        n: Position in the Fibonacci sequence
+        
+    Returns:
+        nth Fibonacci number
+    """
+    if n < 0:
+        raise ValueError("Fibonacci sequence is not defined for negative numbers")
+    if n <= 1:
+        return n
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b
+
 class Calculator:
     """A simple calculator class."""
     
@@ -121,4 +139,16 @@ class AdvancedCalculator(Calculator):
             Factorial of x
         """
         self.result = calculate_factorial(x)
+        return self.result
+        
+    def fibonacci(self, n: int) -> int:
+        """Calculate the nth Fibonacci number.
+        
+        Args:
+            n: Position in the Fibonacci sequence
+            
+        Returns:
+            nth Fibonacci number
+        """
+        self.result = calculate_fibonacci(n)
         return self.result 
