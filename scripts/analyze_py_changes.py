@@ -161,55 +161,60 @@ def analyze_changes(file_path: str):
     """Analyze changes in a Python file and check if README needs updates."""
     print(f"Analyzing changes for {file_path}")
     
-    # Get file contents
-    current_content = get_file_content(file_path)
-    previous_content = get_previous_version(file_path)
-    
-    if not current_content:
-        print(f"Could not get current content for {file_path}")
-        return
+    try:
+        # Get file contents
+        current_content = get_file_content(file_path)
+        previous_content = get_previous_version(file_path)
         
-    # Extract API elements from both versions
-    current_elements = extract_api_elements(current_content)
-    previous_elements = extract_api_elements(previous_content) if previous_content else []
-    
-    # Find changes
-    changes = find_changes(previous_elements, current_elements)
-    
-    if not changes:
-        print("No changes detected")
-        return
+        if not current_content:
+            print(f"Could not get current content for {file_path}")
+            create_api_failure_issue(file_path, "Could not get current file content")
+            return
+            
+        # Extract API elements from both versions
+        current_elements = extract_api_elements(current_content)
+        previous_elements = extract_api_elements(previous_content) if previous_content else []
         
-    print(f"Detected {len(changes)} changes:")
-    for change in changes:
-        print(f"- {change['type']}: {change['name']}")
-    
-    # Check if README needs updates
-    readme_path = os.path.join(os.path.dirname(file_path), 'README.md')
-    if not os.path.exists(readme_path):
-        print(f"README.md not found at {readme_path}")
-        create_readme_issue(file_path, changes)
-        return
+        # Find changes
+        changes = find_changes(previous_elements, current_elements)
         
-    current_readme = get_file_content(readme_path)
-    if not current_readme:
-        print("Could not read README.md")
-        create_readme_issue(file_path, changes)
-        return
+        if not changes:
+            print("No changes detected")
+            return
+            
+        print(f"Detected {len(changes)} changes:")
+        for change in changes:
+            print(f"- {change['type']}: {change['name']}")
         
-    # Check if any new functions/classes are not documented in README
-    needs_update = False
-    for change in changes:
-        if change['type'] == 'added':
-            if change['name'] not in current_readme:
-                print(f"Function/class '{change['name']}' not found in README")
-                needs_update = True
-                
-    if needs_update:
-        print("README needs updates")
-        create_readme_issue(file_path, changes)
-    else:
-        print("README is up to date")
+        # Check if README needs updates
+        readme_path = os.path.join(os.path.dirname(file_path), 'README.md')
+        if not os.path.exists(readme_path):
+            print(f"README.md not found at {readme_path}")
+            create_readme_issue(file_path, changes)
+            return
+            
+        current_readme = get_file_content(readme_path)
+        if not current_readme:
+            print("Could not read README.md")
+            create_readme_issue(file_path, changes)
+            return
+            
+        # Check if any new functions/classes are not documented in README
+        needs_update = False
+        for change in changes:
+            if change['type'] == 'added':
+                if change['name'] not in current_readme:
+                    print(f"Function/class '{change['name']}' not found in README")
+                    needs_update = True
+                    
+        if needs_update:
+            print("README needs updates")
+            create_readme_issue(file_path, changes)
+        else:
+            print("README is up to date")
+    except Exception as e:
+        print(f"Error analyzing changes: {str(e)}")
+        create_api_failure_issue(file_path, str(e))
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
