@@ -57,4 +57,23 @@ class RandomStringGenerator:
         """
         actual_length = length if length is not None else self.default_length
         chars = string.ascii_uppercase if uppercase_only else string.ascii_letters
-        return ''.join(random.choice(chars) for _ in range(actual_length)) 
+        return ''.join(random.choice(chars) for _ in range(actual_length))
+
+def calculate_factorial(n: int) -> int:
+    """
+    Calculate the factorial of a number.
+    
+    Args:
+        n (int): The number to calculate factorial for.
+        
+    Returns:
+        int: The factorial of the number.
+        
+    Raises:
+        ValueError: If the input number is negative.
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+    if n == 0:
+        return 1
+    return n * calculate_factorial(n - 1) 
