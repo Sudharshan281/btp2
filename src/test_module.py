@@ -116,7 +116,7 @@ def calculate_power(base: float, exponent: float) -> float:
     
     Args:
         base (float): The base number
-        exponent (float): The exponent
+        exponent (float): The exponent to raise the base to
         
     Returns:
         float: The result of base raised to the power of exponent
@@ -256,16 +256,16 @@ class AdvancedCalculator(Calculator):
         
     def power(self, base: float, exponent: float) -> float:
         """
-        Calculate power of a number.
+        Calculate the power of a number.
         
         Args:
-            base (float): Base number
-            exponent (float): Exponent
+            base (float): The base number
+            exponent (float): The exponent to raise the base to
             
         Returns:
-            float: Base raised to the power of exponent
+            float: The result of base raised to the power of exponent
         """
-        self.result = base ** exponent
+        self.result = calculate_power(base, exponent)
         return self.result
         
     def square_root(self, number: float) -> float:
