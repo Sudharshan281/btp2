@@ -44,48 +44,93 @@ def get_previous_content(file_path: str) -> str:
         print(f"Error getting previous version: {e}")
         return None
 
-def extract_api_elements(content: str) -> Set[str]:
-    """Extract API elements (functions, classes) from Python code."""
+def extract_api_elements(content: str) -> Dict[str, Dict[str, Any]]:
+    """Extract API elements (functions, classes) from Python code with their signatures and docstrings."""
     if not content:
-        return set()
+        return {}
     
     try:
         tree = ast.parse(content)
     except SyntaxError:
         print("Error parsing Python code")
-        return set()
+        return {}
     
-    elements = set()
+    elements = {}
     
     for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-            elements.add(node.name)
+        if isinstance(node, ast.FunctionDef):
+            # Get function signature
+            args = []
+            for arg in node.args.args:
+                arg_type = ast.unparse(arg.annotation) if arg.annotation else 'Any'
+                args.append(f"{arg.arg}: {arg_type}")
+            
+            # Get return type
+            return_type = ast.unparse(node.returns) if node.returns else 'Any'
+            
+            # Get docstring
+            docstring = ast.get_docstring(node) or ""
+            
+            elements[node.name] = {
+                'type': 'function',
+                'signature': f"({', '.join(args)}) -> {return_type}",
+                'docstring': docstring
+            }
+        elif isinstance(node, ast.ClassDef):
+            # Get class docstring
+            docstring = ast.get_docstring(node) or ""
+            
+            elements[node.name] = {
+                'type': 'class',
+                'docstring': docstring
+            }
     
     return elements
 
-def find_changes(old_elements: Set[str], new_elements: Set[str]) -> List[Dict[str, Any]]:
+def find_changes(old_elements: Dict[str, Dict[str, Any]], new_elements: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Find changes between old and new API elements."""
     changes = []
     
     # Find added elements
-    old_names = set(old_elements)
-    for element in new_elements:
-        if element not in old_names:
+    for name, element in new_elements.items():
+        if name not in old_elements:
             changes.append({
                 'type': 'added',
-                'name': element,
-                'description': f"New API element"
+                'name': name,
+                'description': f"New {element['type']} with signature: {element.get('signature', '')}"
             })
     
     # Find removed elements
-    new_names = set(new_elements)
-    for element in old_names:
-        if element not in new_names:
+    for name, element in old_elements.items():
+        if name not in new_elements:
             changes.append({
                 'type': 'removed',
-                'name': element,
-                'description': f"Removed API element"
+                'name': name,
+                'description': f"Removed {element['type']}"
             })
+    
+    # Find modified elements
+    for name, new_element in new_elements.items():
+        if name in old_elements:
+            old_element = old_elements[name]
+            if new_element['type'] != old_element['type']:
+                changes.append({
+                    'type': 'modified',
+                    'name': name,
+                    'description': f"Changed from {old_element['type']} to {new_element['type']}"
+                })
+            elif new_element.get('signature') != old_element.get('signature'):
+                changes.append({
+                    'type': 'modified',
+                    'name': name,
+                    'description': f"Signature changed from {old_element.get('signature', '')} to {new_element.get('signature', '')}"
+                })
+            elif new_element.get('docstring') != old_element.get('docstring'):
+                changes.append({
+                    'type': 'modified',
+                    'name': name,
+                    'description': "Docstring updated"
+                })
     
     return changes
 
@@ -217,32 +262,31 @@ def analyze_changes(file_path: str) -> None:
             if current_elements:
                 title = f"Documentation Needed: New File {os.path.basename(file_path)}"
                 body = "New file detected with the following API elements:\n"
-                body += "\n".join(f"- {elem}" for elem in sorted(current_elements))
+                for name, element in current_elements.items():
+                    body += f"- {name} ({element['type']})\n"
+                    if element.get('signature'):
+                        body += f"  Signature: {element['signature']}\n"
                 create_github_issue(title, body)
             return
         
         current_elements = extract_api_elements(current_content)
         previous_elements = extract_api_elements(previous_content)
         
-        added = current_elements - previous_elements
-        removed = previous_elements - current_elements
+        changes = find_changes(previous_elements, current_elements)
         
-        if not (added or removed):
+        if not changes:
             print("No API changes detected")
             return
         
         print("Changes detected:")
-        if added:
-            print("Added:", ", ".join(sorted(added)))
-        if removed:
-            print("Removed:", ", ".join(sorted(removed)))
+        for change in changes:
+            print(f"{change['type'].title()}: {change['name']} - {change['description']}")
         
         title = f"Documentation Update: Changes in {os.path.basename(file_path)}"
         body = "The following API changes were detected:\n\n"
-        if added:
-            body += "Added:\n" + "\n".join(f"- {elem}" for elem in sorted(added)) + "\n\n"
-        if removed:
-            body += "Removed:\n" + "\n".join(f"- {elem}" for elem in sorted(removed))
+        for change in changes:
+            body += f"- {change['type'].title()}: {change['name']}\n"
+            body += f"  {change['description']}\n\n"
         
         create_github_issue(title, body)
         
@@ -251,9 +295,8 @@ def analyze_changes(file_path: str) -> None:
         print(error_msg)
         create_github_issue(
             f"Error: Failed to analyze {os.path.basename(file_path)}",
-            f"An error occurred while analyzing changes:\n\n```\n{error_msg}\n```"
+            f"Error message: {error_msg}"
         )
-        raise  # Re-raise to ensure workflow fails
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
