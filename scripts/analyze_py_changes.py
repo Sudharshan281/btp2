@@ -32,35 +32,54 @@ def get_github_client() -> Optional[Github]:
 
 def get_file_content(file_path: str) -> str:
     """Get the current content of a file."""
+    if not file_path or not isinstance(file_path, str):
+        print("ERROR: Invalid file path provided")
+        return None
+        
     try:
         # First try to read directly from filesystem
         if os.path.exists(file_path):
-            print(f"File exists locally, reading directly")
+            print(f"Reading file directly from filesystem: {file_path}")
             with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
+                content = f.read()
+                if not content:
+                    print(f"WARNING: File {file_path} is empty")
+                return content
+        else:
+            print(f"File not found in filesystem: {file_path}")
     except Exception as e:
         print(f"Error reading file directly: {e}")
     
     # Fallback to git show
     try:
-        print(f"Attempting to get file content using git show")
+        print(f"Attempting to get file content using git show: {file_path}")
         result = subprocess.run(['git', 'show', f'HEAD:{file_path}'], 
                               capture_output=True, text=True, check=True)
-        return result.stdout
+        content = result.stdout
+        if not content:
+            print(f"WARNING: Git show returned empty content for {file_path}")
+        return content
     except subprocess.CalledProcessError as e:
-        print(f"Error getting file content: {e}")
+        print(f"Error getting file content from git: {e}")
         return None
 
 def get_previous_content(file_path: str) -> str:
     """Get the previous version of a file from git."""
+    if not file_path or not isinstance(file_path, str):
+        print("ERROR: Invalid file path provided")
+        return None
+        
     try:
-        print(f"Attempting to get previous version of: {file_path}")
+        print(f"Attempting to get previous version from git: {file_path}")
         result = subprocess.run(['git', 'show', f'HEAD^:{file_path}'], 
                               capture_output=True, text=True, check=True)
+        content = result.stdout
+        if not content:
+            print(f"WARNING: Previous version of {file_path} is empty")
         print("Successfully retrieved previous version from git")
-        return result.stdout
+        return content
     except subprocess.CalledProcessError as e:
-        print(f"Error getting previous version: {e}")
+        print(f"Error getting previous version from git: {e}")
         return None
 
 def extract_api_elements(content: str) -> Dict[str, Dict[str, Any]]:
@@ -267,6 +286,10 @@ def create_github_issue(title: str, body: str) -> None:
 
 def analyze_changes(file_path: str) -> None:
     """Analyze changes between current and previous versions of a file."""
+    if not file_path or not isinstance(file_path, str):
+        print("ERROR: Invalid file path provided")
+        return
+        
     print(f"Analyzing changes for {file_path}")
     
     try:
@@ -276,7 +299,7 @@ def analyze_changes(file_path: str) -> None:
             print(error_msg)
             create_github_issue(
                 f"Error: Failed to analyze {os.path.basename(file_path)}",
-                f"Error message: {error_msg}"
+                f"Error message: {error_msg}\n\nPlease check if the file exists and has content."
             )
             return
         
@@ -286,11 +309,13 @@ def analyze_changes(file_path: str) -> None:
             current_elements = extract_api_elements(current_content)
             if current_elements:
                 title = f"Documentation Needed: New File {os.path.basename(file_path)}"
-                body = "New file detected with the following API elements:\n"
+                body = "New file detected with the following API elements:\n\n"
                 for name, element in current_elements.items():
                     body += f"- {name} ({element['type']})\n"
                     if element.get('signature'):
                         body += f"  Signature: {element['signature']}\n"
+                    if element.get('docstring'):
+                        body += f"  Docstring: {element['docstring'][:100]}...\n"
                 create_github_issue(title, body)
             return
         
@@ -320,7 +345,7 @@ def analyze_changes(file_path: str) -> None:
         print(error_msg)
         create_github_issue(
             f"Error: Failed to analyze {os.path.basename(file_path)}",
-            f"Error message: {error_msg}"
+            f"Error message: {error_msg}\n\nPlease check the file and try again."
         )
 
 if __name__ == '__main__':
