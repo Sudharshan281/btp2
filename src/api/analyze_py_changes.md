@@ -1,0 +1,120 @@
+# Documentation Update Needed
+
+The file `scripts/analyze_py_changes.py` has been modified. Please review and update the documentation for the following changes:
+
+- import time
+- def create_simple_pr(self, file_path: str, changes: List[str]) -> None:
+- """Create a simple PR with basic documentation update message."""
+- if not self.github or not self.repo_name:
+- print("GitHub credentials not available")
+- return
+- 
+- try:
+- repo = self.github.get_repo(self.repo_name)
+- branch_name = f"docs-update-{int(time.time())}"
+- 
+- # Create new branch
+- main_branch = repo.get_branch("main")
+- repo.create_git_ref(
+- ref=f"refs/heads/{branch_name}",
+- sha=main_branch.commit.sha
+- )
+- 
+- # Create simple documentation
+- doc_content = f"""# Documentation Update Needed
+- 
+- The file `{file_path}` has been modified. Please review and update the documentation for the following changes:
+- 
+- {chr(10).join(f"- {change}" for change in changes)}
+- 
+- This is an automated PR created because the OpenAI API key is not available. Please manually update the documentation as needed.
+- """
+- 
+- # Create or update documentation file
+- doc_path = f"src/api/{Path(file_path).stem}.md"
+- try:
+- contents = repo.get_contents(doc_path, ref=branch_name)
+- repo.update_file(
+- path=doc_path,
+- message="Update documentation",
+- content=doc_content,
+- sha=contents.sha,
+- branch=branch_name
+- )
+- except github.GithubException:
+- repo.create_file(
+- path=doc_path,
+- message="Create documentation",
+- content=doc_content,
+- branch=branch_name
+- )
+- 
+- # Create PR
+- pr = repo.create_pull(
+- title=f"Docs: Update documentation for {file_path}",
+- body="This PR was created automatically to track documentation updates needed for recent code changes.",
+- head=branch_name,
+- base="main"
+- )
+- print(f"Created PR #{pr.number}")
+- 
+- except Exception as e:
+- print(f"Error creating PR: {str(e)}")
+- 
+- def analyze_changes(self, file_path: str) -> None:
+- """Analyze changes in a Python file and generate documentation."""
+- print(f"Analyzing changes for {file_path}")
+- 
+- try:
+- # Get current content
+- with open(file_path, 'r', encoding='utf-8') as f:
+- 
+- # Get previous version from git
+- try:
+- old_content = subprocess.run(
+- ['git', 'show', f'HEAD^:{file_path}'],
+- capture_output=True,
+- text=True
+- ).stdout
+- except subprocess.CalledProcessError:
+- print(f"Could not find previous version of {file_path}")
+- return
+- 
+- # Extract changes
+- changes = []
+- for line in difflib.unified_diff(
+- old_content.splitlines(),
+- new_content.splitlines(),
+- fromfile='old',
+- tofile='new',
+- lineterm=''
+- ):
+- if line.startswith('+') and not line.startswith('+++'):
+- changes.append(line[1:].strip())
+- 
+- # Try to use OpenAI for documentation
+- try:
+- if not self.openai_client.api_key:
+- raise Exception("No OpenAI API key available")
+- 
+- response = self.openai_client.ChatCompletion.create(
+- model="gpt-3.5-turbo",
+- messages=[
+- {"role": "system", "content": "You are a documentation generator. Create clear, concise documentation for Python code changes."},
+- {"role": "user", "content": f"Generate documentation for these changes:\n{chr(10).join(changes)}"}
+- ]
+- )
+- doc_content = response.choices[0].message.content
+- 
+- # Create PR with OpenAI-generated documentation
+- self.create_pr(file_path, doc_content)
+- 
+- except Exception as e:
+- print(f"Error generating documentation with LLM: {str(e)}")
+- # Create simple PR instead
+- self.create_simple_pr(file_path, changes)
+- 
+- print(f"Error analyzing changes: {str(e)}")
+- analyzer.analyze_changes(file_path)
+
+This is an automated PR created because the OpenAI API key is not available. Please manually update the documentation as needed.
