@@ -1,107 +1,49 @@
-name: Check for API Documentation Updates
+name: Documentation Update Check
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'src/api/**/*.py'
-      - 'src/api/**/README.md'
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
 
 jobs:
-  detect-api-changes:
+  check_doc_updates:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 2  # Need at least 2 commits for git show HEAD^
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyGithub openai
-
-      - name: Debug Git Info
-        run: |
-          echo "Current commit: $(git rev-parse HEAD)"
-          echo "Previous commit: $(git rev-parse HEAD^)"
-          echo "All commits:"
-          git log --oneline -n 5
-          echo "Files in src/api:"
-          ls -la src/api/
-          echo "Git status:"
-          git status
+          pip install -r requirements.txt
 
       - name: Get changed Python files
         id: changed-files
         run: |
-          # Get the previous commit hash
-          PREV_COMMIT=$(git rev-parse HEAD^)
-          echo "Previous commit: $PREV_COMMIT"
-          echo "Current commit: ${{ github.sha }}"
-          
-          # Get the list of changed files with full diff
-          echo "Full diff:"
-          git diff --name-status $PREV_COMMIT ${{ github.sha }}
-          
-          # Get Python file changes
-          git diff --name-only $PREV_COMMIT ${{ github.sha }} -- 'src/api/**/*.py' > modified_files.txt
-          
-          if [ -f modified_files.txt ]; then
-            CHANGED_FILES=$(cat modified_files.txt)
-            if [ ! -z "$CHANGED_FILES" ]; then
-              echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-              echo "Changed Python files: $CHANGED_FILES"
-            else
-              echo "No Python files changed"
-            fi
-          else
-            echo "No modified_files.txt found"
-          fi
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- '**/*.py' || git diff --name-only HEAD^ HEAD -- '**/*.py')
+          echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
 
-      - name: Analyze Python Changes
-        if: env.CHANGED_FILES != ''
+      - name: Analyze changes and create documentation PR
+        if: steps.changed-files.outputs.files != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          for file in $CHANGED_FILES; do
-            if [ -f "$file" ]; then
-              echo "Analyzing changes in $file"
-              PREV_COMMIT=$(git rev-parse HEAD^)
-              python scripts/analyze_py_changes.py <(git show $PREV_COMMIT:$file) "$file"
-            fi
+          for file in ${{ steps.changed-files.outputs.files }}; do
+            echo "Analyzing changes in $file"
+            python scripts/analyze_py_changes.py "$file"
           done
-
-      - name: Create Pull Request with Report
-        if: steps.analyze.outputs.report_content != '' # Only run if analysis produced a report
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: Generate API change report"
-          branch: docs-update/api-changes-${{ github.run_id }}
-          delete-branch: true
-          title: "Potential API Documentation Updates Required"
-          body: |
-            Automated analysis detected potential changes in Python API files that might require documentation updates.
-
-            Please review the following changes and update the relevant Markdown documentation files manually:
-
-            ${{ steps.analyze.outputs.report_content }}
-
-            *Note: This report lists added/removed functions and classes. More complex changes (e.g., parameter modifications) are not yet detected in this version.*
-          add-paths: |
-            docs/api_change_report.md # Path where the report will be saved
-          # Optional: Add labels or assignees
-          # labels: documentation, automated-pr
-          # assignees: your-username

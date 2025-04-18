@@ -11,7 +11,7 @@ from github import Github
 import openai
 from openai import OpenAI
 
-class APIAnalyzer:
+class CodeAnalyzer:
     def __init__(self):
         self.github_token = os.getenv('GITHUB_TOKEN')
         self.repo_name = os.getenv('GITHUB_REPOSITORY')
@@ -22,35 +22,27 @@ class APIAnalyzer:
         """Parse Python code into an Abstract Syntax Tree (AST)."""
         try:
             tree = ast.parse(file_content)
-            print("AST parsed successfully")
-            print("AST nodes found:", len(list(ast.walk(tree))))
             return tree
         except SyntaxError as e:
             print(f"SyntaxError parsing: {e}")
             return None
 
-    def extract_api_elements(self, tree: ast.AST) -> Dict:
-        """Extract all relevant API elements from an AST."""
+    def extract_code_elements(self, tree: ast.AST) -> Dict:
+        """Extract all relevant code elements from an AST."""
         elements = {
             "functions": [],
             "classes": [],
             "methods": [],
-            "decorators": []
+            "imports": [],
+            "constants": []
         }
 
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
-                print(f"Found function: {node.name}")
                 # Get function signature
                 args = [arg.arg for arg in node.args.args]
-                returns = None
-                if node.returns:
-                    returns = ast.unparse(node.returns)
-                
-                # Get docstring
+                returns = ast.unparse(node.returns) if node.returns else None
                 docstring = ast.get_docstring(node)
-                
-                # Get decorators
                 decorators = [ast.unparse(d) for d in node.decorator_list]
                 
                 elements["functions"].append({
@@ -63,48 +55,66 @@ class APIAnalyzer:
                 })
             
             elif isinstance(node, ast.ClassDef):
-                print(f"Found class: {node.name}")
-                # Get class docstring
                 docstring = ast.get_docstring(node)
-                
-                # Get class decorators
                 decorators = [ast.unparse(d) for d in node.decorator_list]
+                bases = [ast.unparse(b) for b in node.bases]
                 
                 elements["classes"].append({
                     "name": node.name,
                     "docstring": docstring,
                     "decorators": decorators,
+                    "bases": bases,
                     "lineno": node.lineno
                 })
+            
+            elif isinstance(node, ast.Import):
+                for name in node.names:
+                    elements["imports"].append({
+                        "name": name.name,
+                        "alias": name.asname,
+                        "lineno": node.lineno
+                    })
+            
+            elif isinstance(node, ast.Assign):
+                if isinstance(node.targets[0], ast.Name):
+                    elements["constants"].append({
+                        "name": node.targets[0].id,
+                        "value": ast.unparse(node.value),
+                        "lineno": node.lineno
+                    })
 
-        print(f"Extracted {len(elements['functions'])} functions and {len(elements['classes'])} classes")
         return elements
 
-    def find_readme(self, file_path: str) -> Optional[str]:
-        """Find the relevant README file for a given Python file."""
+    def find_doc_file(self, file_path: str) -> Optional[str]:
+        """Find the relevant documentation file for a given Python file."""
         current_dir = Path(file_path).parent
-        max_depth = 3  # Maximum number of parent directories to check
+        max_depth = 3
         
+        # First try to find README.md
         for _ in range(max_depth):
             readme_path = current_dir / "README.md"
             if readme_path.exists():
                 return str(readme_path)
             current_dir = current_dir.parent
         
-        return None
+        # If no README, try to find docstring in the file
+        return file_path
 
-    def generate_doc_update_with_llm(self, changes: Dict, file_path: str, current_doc: str) -> Optional[str]:
-        """Generate documentation update using OpenAI's LLM."""
-        if not self.openai_client:
-            print("OpenAI API key not configured")
+    def generate_doc_update(self, changes: Dict, file_path: str) -> Optional[str]:
+        """Generate documentation update based on code changes."""
+        doc_path = self.find_doc_file(file_path)
+        if not doc_path:
             return None
 
-        print("\nGenerating documentation update with LLM...")
-        print("Changes to document:", changes)
+        try:
+            with open(doc_path, 'r') as f:
+                current_doc = f.read()
+        except FileNotFoundError:
+            current_doc = ""
 
         # Prepare the prompt for the LLM
         prompt = f"""
-        I have a Python API file with the following changes:
+        I have a Python file with the following changes:
         
         Added elements:
         {changes.get('added', [])}
@@ -120,68 +130,18 @@ class APIAnalyzer:
         """
 
         try:
-            print("Sending request to OpenAI API...")
             response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a technical documentation writer. Update the documentation to reflect API changes while maintaining the same format and style."},
+                    {"role": "system", "content": "You are a technical documentation writer. Update the documentation to reflect code changes while maintaining the same format and style."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3
             )
-            
-            print("Received response from OpenAI API")
             return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"Error generating documentation with LLM: {e}")
             return None
-
-    def generate_doc_update(self, changes: Dict, file_path: str) -> Optional[str]:
-        """Generate documentation update based on API changes."""
-        readme_path = self.find_readme(file_path)
-        if not readme_path:
-            return None
-
-        try:
-            with open(readme_path, 'r') as f:
-                current_doc = f.read()
-        except FileNotFoundError:
-            current_doc = ""
-
-        # Try to use LLM for documentation update
-        llm_update = self.generate_doc_update_with_llm(changes, file_path, current_doc)
-        if llm_update:
-            return llm_update
-
-        # Fallback to basic update if LLM fails
-        update = []
-        if changes["added"]:
-            update.append("### New API Elements")
-            for element in changes["added"]:
-                if "functions" in element:
-                    for func in element["functions"]:
-                        update.append(f"- Added function `{func['name']}`")
-                        if func["docstring"]:
-                            update.append(f"  ```python\n  {func['docstring']}\n  ```")
-                
-                if "classes" in element:
-                    for cls in element["classes"]:
-                        update.append(f"- Added class `{cls['name']}`")
-                        if cls["docstring"]:
-                            update.append(f"  ```python\n  {cls['docstring']}\n  ```")
-
-        if changes["removed"]:
-            update.append("### Removed API Elements")
-            for element in changes["removed"]:
-                if "functions" in element:
-                    for func in element["functions"]:
-                        update.append(f"- Removed function `{func['name']}`")
-                
-                if "classes" in element:
-                    for cls in element["classes"]:
-                        update.append(f"- Removed class `{cls['name']}`")
-
-        return "\n".join(update) if update else None
 
     def create_pull_request(self, title: str, body: str, branch_name: str):
         """Create a pull request with the documentation updates."""
@@ -208,38 +168,40 @@ class APIAnalyzer:
         
         return pr
 
-    def analyze_changes(self, old_file: str, new_file: str) -> Dict:
-        """Analyze changes between two versions of a Python file."""
-        print(f"\nAnalyzing changes between {old_file} and {new_file}")
+    def analyze_changes(self, file_path: str) -> Dict:
+        """Analyze changes between two versions of a Python file using AST."""
+        print(f"\nAnalyzing changes for {file_path}")
         
+        # Get the current content
         try:
-            with open(old_file, 'r') as f:
-                old_content = f.read()
-                print(f"Read old file: {len(old_content)} characters")
+            with open(file_path, 'r') as f:
+                new_content = f.read()
         except FileNotFoundError:
-            print("Old file not found, assuming new file")
+            print(f"Error: {file_path} does not exist.")
+            return None
+
+        # Get the previous version from git
+        try:
+            result = subprocess.run(
+                ['git', 'show', 'HEAD^:' + file_path],
+                capture_output=True,
+                text=True
+            )
+            old_content = result.stdout if result.returncode == 0 else ""
+        except Exception as e:
+            print(f"Error getting previous version: {e}")
             old_content = ""
 
-        try:
-            with open(new_file, 'r') as f:
-                new_content = f.read()
-                print(f"Read new file: {len(new_content)} characters")
-        except FileNotFoundError:
-            print(f"Error: {new_file} does not exist.")
-            return None
-
-        print("\nParsing AST for old file...")
+        # Parse ASTs
         old_tree = self.parse_ast(old_content)
-        print("\nParsing AST for new file...")
         new_tree = self.parse_ast(new_content)
 
-        if old_tree is None or new_tree is None:
+        if new_tree is None:
             return None
 
-        print("\nExtracting API elements from old file...")
-        old_elements = self.extract_api_elements(old_tree)
-        print("\nExtracting API elements from new file...")
-        new_elements = self.extract_api_elements(new_tree)
+        # Extract elements from both versions
+        old_elements = self.extract_code_elements(old_tree) if old_tree else {"functions": [], "classes": [], "imports": [], "constants": []}
+        new_elements = self.extract_code_elements(new_tree)
 
         changes = {
             "added": [],
@@ -252,12 +214,13 @@ class APIAnalyzer:
         
         for name, func in new_funcs.items():
             if name not in old_funcs:
-                print(f"New function detected: {name}")
                 changes["added"].append({"functions": [func]})
+            elif func != old_funcs[name]:
+                changes["added"].append({"functions": [func]})
+                changes["removed"].append({"functions": [old_funcs[name]]})
         
         for name, func in old_funcs.items():
             if name not in new_funcs:
-                print(f"Removed function detected: {name}")
                 changes["removed"].append({"functions": [func]})
 
         # Compare classes
@@ -266,45 +229,69 @@ class APIAnalyzer:
         
         for name, cls in new_classes.items():
             if name not in old_classes:
-                print(f"New class detected: {name}")
                 changes["added"].append({"classes": [cls]})
+            elif cls != old_classes[name]:
+                changes["added"].append({"classes": [cls]})
+                changes["removed"].append({"classes": [old_classes[name]]})
         
         for name, cls in old_classes.items():
             if name not in new_classes:
-                print(f"Removed class detected: {name}")
                 changes["removed"].append({"classes": [cls]})
 
-        print(f"\nChanges detected: {len(changes['added'])} additions, {len(changes['removed'])} removals")
+        # Compare imports
+        old_imports = {i["name"]: i for i in old_elements["imports"]}
+        new_imports = {i["name"]: i for i in new_elements["imports"]}
+        
+        for name, imp in new_imports.items():
+            if name not in old_imports:
+                changes["added"].append({"imports": [imp]})
+        
+        for name, imp in old_imports.items():
+            if name not in new_imports:
+                changes["removed"].append({"imports": [imp]})
+
+        # Compare constants
+        old_constants = {c["name"]: c for c in old_elements["constants"]}
+        new_constants = {c["name"]: c for c in new_elements["constants"]}
+        
+        for name, const in new_constants.items():
+            if name not in old_constants:
+                changes["added"].append({"constants": [const]})
+            elif const != old_constants[name]:
+                changes["added"].append({"constants": [const]})
+                changes["removed"].append({"constants": [old_constants[name]]})
+        
+        for name, const in old_constants.items():
+            if name not in new_constants:
+                changes["removed"].append({"constants": [const]})
+
         return changes
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python analyze_py_changes.py <old_file> <new_file>")
+    if len(sys.argv) != 2:
+        print("Usage: python analyze_py_changes.py <file_path>")
         sys.exit(1)
 
-    analyzer = APIAnalyzer()
-    old_file = sys.argv[1]
-    new_file = sys.argv[2]
+    analyzer = CodeAnalyzer()
+    file_path = sys.argv[1]
 
-    print(f"Starting analysis with OpenAI API key: {bool(analyzer.openai_client)}")
-    
-    changes = analyzer.analyze_changes(old_file, new_file)
+    changes = analyzer.analyze_changes(file_path)
     
     if changes:
-        doc_update = analyzer.generate_doc_update(changes, new_file)
+        doc_update = analyzer.generate_doc_update(changes, file_path)
         if doc_update:
             print("\nDocumentation update generated:")
             print(doc_update)
             
             # Create PR if running in GitHub Actions
             if analyzer.github_token:
-                branch_name = f"docs-update/api-changes-{os.getenv('GITHUB_RUN_ID')}"
+                branch_name = f"docs-update/{os.path.basename(file_path)}-{os.getenv('GITHUB_RUN_ID')}"
                 pr = analyzer.create_pull_request(
-                    title="API Documentation Updates Required",
+                    title=f"Documentation Update for {os.path.basename(file_path)}",
                     body=doc_update,
                     branch_name=branch_name
                 )
                 if pr:
                     print(f"Created PR: {pr.html_url}")
     else:
-        print("No API changes detected.")
+        print("No significant changes detected.")
