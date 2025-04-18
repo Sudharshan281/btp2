@@ -68,6 +68,20 @@ def calculate_fibonacci(n: int) -> int:
         a, b = b, a + b
     return b
 
+def calculate_gcd(a: int, b: int) -> int:
+    """Calculate the greatest common divisor of two numbers.
+    
+    Args:
+        a: First number
+        b: Second number
+        
+    Returns:
+        Greatest common divisor of a and b
+    """
+    while b:
+        a, b = b, a % b
+    return abs(a)
+
 class Calculator:
     """A simple calculator class."""
     
@@ -151,4 +165,17 @@ class AdvancedCalculator(Calculator):
             nth Fibonacci number
         """
         self.result = calculate_fibonacci(n)
+        return self.result
+        
+    def gcd(self, x: int, y: int) -> int:
+        """Calculate the greatest common divisor of two numbers.
+        
+        Args:
+            x: First number
+            y: Second number
+            
+        Returns:
+            Greatest common divisor of x and y
+        """
+        self.result = calculate_gcd(x, y)
         return self.result 
