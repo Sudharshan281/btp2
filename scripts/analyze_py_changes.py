@@ -2,14 +2,33 @@ import ast
 import os
 import sys
 import subprocess
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Any, Set, Optional, Tuple
 from github import Github
 
-def get_github_token():
-    return os.environ.get('GITHUB_TOKEN')
+def get_env_vars() -> Tuple[Optional[str], Optional[str]]:
+    """Get GitHub token and repository name from environment variables."""
+    token = os.getenv('GITHUB_TOKEN')
+    repo = os.getenv('GITHUB_REPOSITORY')
+    
+    if not token:
+        print("ERROR: GITHUB_TOKEN environment variable is not set")
+    if not repo:
+        print("ERROR: GITHUB_REPOSITORY environment variable is not set")
+    
+    print(f"Environment check - Token present: {'Yes' if token else 'No'}, Repo present: {'Yes' if repo else 'No'}")
+    return token, repo
 
-def get_repo_name():
-    return os.environ.get('GITHUB_REPOSITORY')
+def get_github_client() -> Optional[Github]:
+    """Get authenticated GitHub client."""
+    token, repo = get_env_vars()
+    if not token or not repo:
+        return None
+    
+    try:
+        return Github(token)
+    except Exception as e:
+        print(f"ERROR: Failed to create GitHub client: {e}")
+        return None
 
 def get_file_content(file_path: str) -> str:
     """Get the current content of a file."""
@@ -136,11 +155,9 @@ def find_changes(old_elements: Dict[str, Dict[str, Any]], new_elements: Dict[str
 
 def create_readme_issue(py_file: str, changes: List[Dict[str, Any]]):
     """Create a GitHub issue about README updates needed."""
-    token = get_github_token()
-    repo_name = get_repo_name()
-    
+    token, repo_name = get_env_vars()
     if not token or not repo_name:
-        print("Missing GitHub token or repository name")
+        print("ERROR: Cannot create issue - missing GitHub credentials")
         print("Would create issue with the following content:")
         print(f"Title: README Update Needed for {os.path.basename(py_file)}")
         print("Changes:")
@@ -149,8 +166,12 @@ def create_readme_issue(py_file: str, changes: List[Dict[str, Any]]):
         return
         
     try:
-        g = Github(token)
+        g = get_github_client()
+        if not g:
+            return
+            
         repo = g.get_repo(repo_name)
+        print(f"Successfully connected to repository: {repo_name}")
         
         # Format changes for the issue
         changes_text = "\n".join([
@@ -172,28 +193,30 @@ Please review and update the README.md file to reflect these changes.
             body=issue_body,
             labels=["documentation", "readme"]
         )
-        print(f"Created issue for README updates")
+        print(f"Successfully created issue: {issue_title}")
     except Exception as e:
-        print(f"Error creating issue: {str(e)}")
+        print(f"ERROR: Failed to create issue: {str(e)}")
         print("Would create issue with the following content:")
         print(f"Title: {issue_title}")
         print(f"Body: {issue_body}")
 
 def create_api_failure_issue(py_file: str, error: str):
     """Create a GitHub issue when API key fails."""
-    token = get_github_token()
-    repo_name = get_repo_name()
-    
+    token, repo_name = get_env_vars()
     if not token or not repo_name:
-        print("Missing GitHub token or repository name")
+        print("ERROR: Cannot create issue - missing GitHub credentials")
         print("Would create issue with the following content:")
         print(f"Title: API Key Failure for {os.path.basename(py_file)}")
         print(f"Error: {error}")
         return
         
     try:
-        g = Github(token)
+        g = get_github_client()
+        if not g:
+            return
+            
         repo = g.get_repo(repo_name)
+        print(f"Successfully connected to repository: {repo_name}")
         
         issue_title = f"API Key Failure for {os.path.basename(py_file)}"
         issue_body = f"""
@@ -209,34 +232,36 @@ Please check the API key configuration and try again.
             body=issue_body,
             labels=["bug", "api"]
         )
-        print(f"Created issue for API key failure")
+        print(f"Successfully created issue: {issue_title}")
     except Exception as e:
-        print(f"Error creating issue: {str(e)}")
+        print(f"ERROR: Failed to create issue: {str(e)}")
         print("Would create issue with the following content:")
         print(f"Title: {issue_title}")
         print(f"Body: {issue_body}")
 
 def create_github_issue(title: str, body: str) -> None:
     """Create a GitHub issue with the specified title and body."""
-    token = os.getenv('GITHUB_TOKEN')
-    repo_name = os.getenv('GITHUB_REPOSITORY')
-    
+    token, repo_name = get_env_vars()
     if not token or not repo_name:
-        print("Missing GitHub token or repository name")
+        print("ERROR: Cannot create issue - missing GitHub credentials")
         print("Would create issue with the following content:")
         print(f"Title: {title}")
         print(f"Body:\n{body}")
         return
     
     try:
-        g = Github(token)
+        g = get_github_client()
+        if not g:
+            return
+            
         repo = g.get_repo(repo_name)
+        print(f"Successfully connected to repository: {repo_name}")
+        
         issue = repo.create_issue(title=title, body=body)
-        print(f"Created issue #{issue.number}: {title}")
+        print(f"Successfully created issue #{issue.number}: {title}")
     except Exception as e:
-        print(f"Error creating GitHub issue: {e}")
-        # Print the issue content that would have been created
-        print("Would have created issue with:")
+        print(f"ERROR: Failed to create GitHub issue: {e}")
+        print("Would create issue with the following content:")
         print(f"Title: {title}")
         print(f"Body:\n{body}")
 
