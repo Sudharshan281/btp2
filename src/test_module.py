@@ -237,6 +237,18 @@ def calculate_combination(n: int, r: int) -> int:
         raise ValueError("r cannot be greater than n")
     return math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
 
+def calculate_cube_root(number: float) -> float:
+    """
+    Calculate the cube root of a number.
+    
+    Args:
+        number (float): The number to calculate the cube root of.
+        
+    Returns:
+        float: The cube root of the number.
+    """
+    return number ** (1/3)
+
 class Calculator:
     """A simple calculator class."""
     
