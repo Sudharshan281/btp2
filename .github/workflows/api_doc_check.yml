@@ -5,7 +5,8 @@ on:
     branches: [ main ]
     paths:
       - 'src/**/*.py'
-      - 'README.md'
+      - '.github/workflows/api_doc_check.yml'
+      - 'scripts/analyze_py_changes.py'
 
 permissions:
   contents: write
@@ -60,10 +61,10 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           for file in ${{ steps.check_changes.outputs.modified_files }}; do
-            echo "Analyzing changes in $file"
+            echo "Analyzing $file"
             echo "Current content:"
-            git show HEAD:$file
+            cat "$file"
             echo "Previous content:"
-            git show HEAD^:$file
-            python scripts/analyze_py_changes.py "$file" || true
+            git show HEAD^:"$file"
+            python scripts/analyze_py_changes.py "$file"
           done
