@@ -3,13 +3,15 @@ import difflib
 import os
 import sys
 import subprocess
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import re
 from pathlib import Path
 import github
 from github import Github
 import openai
 import time
+import json
+import requests
 
 class CodeAnalyzer:
     def __init__(self):
@@ -324,6 +326,118 @@ This is an automated issue created because the OpenAI API key is not available. 
 
         except Exception as e:
             print(f"Error analyzing changes: {str(e)}")
+
+def get_github_token():
+    return os.environ.get('GITHUB_TOKEN')
+
+def get_openai_key():
+    return os.environ.get('OPENAI_API_KEY')
+
+def get_repo_name():
+    return os.environ.get('GITHUB_REPOSITORY')
+
+def get_file_content(file_path: str) -> str:
+    try:
+        result = subprocess.run(['git', 'show', f'HEAD:{file_path}'], 
+                              capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout
+        return ""
+    except Exception as e:
+        print(f"Error getting file content: {e}")
+        return ""
+
+def get_previous_version(file_path: str) -> str:
+    try:
+        result = subprocess.run(['git', 'show', f'HEAD^:{file_path}'], 
+                              capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout
+        return ""
+    except Exception as e:
+        print(f"Error getting previous version: {e}")
+        return ""
+
+def check_readme_updates(py_file: str, changes: List[Dict[str, Any]]) -> bool:
+    """Check if README.md needs updates based on Python file changes."""
+    readme_path = os.path.join(os.path.dirname(py_file), 'README.md')
+    if not os.path.exists(readme_path):
+        return True  # README needs to be created
+        
+    current_readme = get_file_content(readme_path)
+    if not current_readme:
+        return True
+        
+    # Check if any new functions/classes are not documented in README
+    for change in changes:
+        if change['type'] == 'added':
+            if change['name'] not in current_readme:
+                return True
+                
+    return False
+
+def create_readme_issue(py_file: str, changes: List[Dict[str, Any]]):
+    """Create a GitHub issue about README updates needed."""
+    token = get_github_token()
+    repo_name = get_repo_name()
+    
+    if not token or not repo_name:
+        print("Missing GitHub token or repository name")
+        return
+        
+    g = Github(token)
+    repo = g.get_repo(repo_name)
+    
+    # Format changes for the issue
+    changes_text = "\n".join([
+        f"- {change['type'].title()}: {change['name']} ({change['description']})"
+        for change in changes
+    ])
+    
+    issue_title = f"README Update Needed for {os.path.basename(py_file)}"
+    issue_body = f"""
+The following changes in `{py_file}` require updates to the README.md file:
+
+{changes_text}
+
+Please review and update the README.md file to reflect these changes.
+"""
+    
+    try:
+        repo.create_issue(
+            title=issue_title,
+            body=issue_body,
+            labels=["documentation", "readme"]
+        )
+        print(f"Created issue for README updates")
+    except Exception as e:
+        print(f"Error creating issue: {e}")
+
+def analyze_changes(file_path: str):
+    """Analyze changes in a Python file and check if README needs updates."""
+    print(f"Analyzing changes for {file_path}")
+    
+    # Get file contents
+    current_content = get_file_content(file_path)
+    previous_content = get_previous_version(file_path)
+    
+    if not current_content:
+        print(f"Could not get current content for {file_path}")
+        return
+        
+    # Extract API elements from both versions
+    current_elements = extract_api_elements(current_content)
+    previous_elements = extract_api_elements(previous_content) if previous_content else []
+    
+    # Find changes
+    changes = find_changes(previous_elements, current_elements)
+    
+    # Check if README needs updates
+    if check_readme_updates(file_path, changes):
+        print("README needs updates")
+        create_readme_issue(file_path, changes)
+    else:
+        print("README is up to date")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
