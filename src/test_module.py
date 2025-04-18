@@ -97,6 +97,19 @@ def calculate_lcm(a: int, b: int) -> int:
         return 0
     return abs(a * b) // calculate_gcd(a, b)
 
+def calculate_absolute_difference(a: float, b: float) -> float:
+    """
+    Calculate the absolute difference between two numbers.
+    
+    Args:
+        a (float): First number
+        b (float): Second number
+        
+    Returns:
+        float: Absolute difference between a and b
+    """
+    return abs(a - b)
+
 class Calculator:
     """A simple calculator class."""
     
@@ -281,4 +294,17 @@ class AdvancedCalculator(Calculator):
             int: LCM of a and b
         """
         self.result = calculate_lcm(a, b)
-        return self.result 
+        return self.result
+
+    def absolute_difference(self, a: float, b: float) -> float:
+        """
+        Calculate the absolute difference between two numbers.
+        
+        Args:
+            a (float): First number
+            b (float): Second number
+            
+        Returns:
+            float: Absolute difference between a and b
+        """
+        return calculate_absolute_difference(a, b) 
