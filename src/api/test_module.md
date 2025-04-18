@@ -1,0 +1,143 @@
+# Documentation Update Needed
+
+The file `src/test_module.py` has been modified. Please review and update the documentation for the following changes:
+
+- def calculate_lcm(a: int, b: int) -> int:
+- """
+- Calculate the Least Common Multiple (LCM) of two numbers.
+- 
+- Args:
+- a (int): First number
+- b (int): Second number
+- 
+- Returns:
+- int: The LCM of a and b
+- """
+- if a == 0 or b == 0:
+- return 0
+- return abs(a * b) // calculate_gcd(a, b)
+- 
+- def __init__(self):
+- """Initialize the advanced calculator."""
+- super().__init__()
+- self.memory = 0
+- 
+- def add(self, a: float, b: float) -> float:
+- """
+- Add two numbers.
+- 
+- Args:
+- a (float): First number
+- b (float): Second number
+- 
+- Returns:
+- float: Sum of a and b
+- """
+- self.result = a + b
+- return self.result
+- 
+- def subtract(self, a: float, b: float) -> float:
+- """
+- Subtract two numbers.
+- 
+- Args:
+- a (float): First number
+- b (float): Second number
+- 
+- Returns:
+- float: Difference of a and b
+- """
+- self.result = a - b
+- return self.result
+- 
+- def multiply(self, a: float, b: float) -> float:
+- """
+- Multiply two numbers.
+- 
+- Args:
+- a (float): First number
+- b (float): Second number
+- 
+- Returns:
+- float: Product of a and b
+- """
+- self.result = a * b
+- return self.result
+- 
+- def divide(self, a: float, b: float) -> float:
+- """
+- Divide two numbers.
+- 
+- Args:
+- a (float): First number
+- b (float): Second number
+- 
+- Returns:
+- float: Quotient of a and b
+- 
+- Raises:
+- ValueError: If b is zero
+- """
+- if b == 0:
+- raise ValueError("Cannot divide by zero")
+- self.result = a / b
+- return self.result
+- 
+- def power(self, base: float, exponent: float) -> float:
+- """
+- Calculate power of a number.
+- 
+- Args:
+- base (float): Base number
+- exponent (float): Exponent
+- 
+- Returns:
+- float: Base raised to the power of exponent
+- """
+- self.result = base ** exponent
+- return self.result
+- 
+- def square_root(self, number: float) -> float:
+- """
+- Calculate square root of a number.
+- 
+- Args:
+- number (float): Number to calculate square root of
+- 
+- Returns:
+- float: Square root of the number
+- 
+- Raises:
+- ValueError: If number is negative
+- """
+- if number < 0:
+- raise ValueError("Cannot calculate square root of negative number")
+- self.result = number ** 0.5
+- def gcd(self, a: int, b: int) -> int:
+- """
+- Calculate Greatest Common Divisor (GCD) of two numbers.
+- 
+- Args:
+- a (int): First number
+- b (int): Second number
+- 
+- Returns:
+- int: GCD of a and b
+- """
+- self.result = calculate_gcd(a, b)
+- return self.result
+- 
+- def lcm(self, a: int, b: int) -> int:
+- """
+- Calculate Least Common Multiple (LCM) of two numbers.
+- 
+- Args:
+- a (int): First number
+- b (int): Second number
+- 
+- Returns:
+- int: LCM of a and b
+- """
+- self.result = calculate_lcm(a, b)
+
+This is an automated PR created because the OpenAI API key is not available. Please manually update the documentation as needed.
