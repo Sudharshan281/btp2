@@ -186,6 +186,18 @@ def calculate_exponential(x: float) -> float:
     """
     return math.exp(x)
 
+def calculate_sine(x: float) -> float:
+    """
+    Calculate the sine of a number in radians.
+    
+    Args:
+        x (float): The angle in radians
+        
+    Returns:
+        float: The sine of x
+    """
+    return math.sin(x)
+
 class Calculator:
     """A simple calculator class."""
     
