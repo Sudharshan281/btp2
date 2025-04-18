@@ -79,6 +79,21 @@ def calculate_fibonacci(n: int) -> int:
         return n
     return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
 
+def calculate_gcd(a: int, b: int) -> int:
+    """
+    Calculate the Greatest Common Divisor (GCD) of two numbers.
+    
+    Args:
+        a (int): First number
+        b (int): Second number
+        
+    Returns:
+        int: The GCD of a and b
+    """
+    while b:
+        a, b = b, a % b
+    return abs(a)
+
 class MathOperations:
     """
     A class for performing mathematical operations.
