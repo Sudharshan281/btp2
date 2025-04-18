@@ -37,4 +37,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         GITHUB_REPOSITORY: ${{ github.repository }}
       run: |
-        python scripts/analyze_py_changes.py ${{ github.event.head_commit.modified[0] }}
+        MODIFIED_FILE=$(git diff --name-only HEAD^ HEAD -- 'src/**/*.py' | head -n 1)
+        if [ -n "$MODIFIED_FILE" ]; then
+          python scripts/analyze_py_changes.py "$MODIFIED_FILE"
+        fi
