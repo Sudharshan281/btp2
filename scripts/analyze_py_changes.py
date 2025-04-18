@@ -21,7 +21,10 @@ class APIAnalyzer:
     def parse_ast(self, file_content: str) -> Optional[ast.AST]:
         """Parse Python code into an Abstract Syntax Tree (AST)."""
         try:
-            return ast.parse(file_content)
+            tree = ast.parse(file_content)
+            print("AST parsed successfully")
+            print("AST nodes found:", len(list(ast.walk(tree))))
+            return tree
         except SyntaxError as e:
             print(f"SyntaxError parsing: {e}")
             return None
@@ -37,6 +40,7 @@ class APIAnalyzer:
 
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
+                print(f"Found function: {node.name}")
                 # Get function signature
                 args = [arg.arg for arg in node.args.args]
                 returns = None
@@ -59,6 +63,7 @@ class APIAnalyzer:
                 })
             
             elif isinstance(node, ast.ClassDef):
+                print(f"Found class: {node.name}")
                 # Get class docstring
                 docstring = ast.get_docstring(node)
                 
@@ -72,6 +77,7 @@ class APIAnalyzer:
                     "lineno": node.lineno
                 })
 
+        print(f"Extracted {len(elements['functions'])} functions and {len(elements['classes'])} classes")
         return elements
 
     def find_readme(self, file_path: str) -> Optional[str]:
@@ -93,6 +99,9 @@ class APIAnalyzer:
             print("OpenAI API key not configured")
             return None
 
+        print("\nGenerating documentation update with LLM...")
+        print("Changes to document:", changes)
+
         # Prepare the prompt for the LLM
         prompt = f"""
         I have a Python API file with the following changes:
@@ -111,6 +120,7 @@ class APIAnalyzer:
         """
 
         try:
+            print("Sending request to OpenAI API...")
             response = self.openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -120,6 +130,7 @@ class APIAnalyzer:
                 temperature=0.3
             )
             
+            print("Received response from OpenAI API")
             return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"Error generating documentation with LLM: {e}")
@@ -199,26 +210,35 @@ class APIAnalyzer:
 
     def analyze_changes(self, old_file: str, new_file: str) -> Dict:
         """Analyze changes between two versions of a Python file."""
+        print(f"\nAnalyzing changes between {old_file} and {new_file}")
+        
         try:
             with open(old_file, 'r') as f:
                 old_content = f.read()
+                print(f"Read old file: {len(old_content)} characters")
         except FileNotFoundError:
+            print("Old file not found, assuming new file")
             old_content = ""
 
         try:
             with open(new_file, 'r') as f:
                 new_content = f.read()
+                print(f"Read new file: {len(new_content)} characters")
         except FileNotFoundError:
             print(f"Error: {new_file} does not exist.")
             return None
 
+        print("\nParsing AST for old file...")
         old_tree = self.parse_ast(old_content)
+        print("\nParsing AST for new file...")
         new_tree = self.parse_ast(new_content)
 
         if old_tree is None or new_tree is None:
             return None
 
+        print("\nExtracting API elements from old file...")
         old_elements = self.extract_api_elements(old_tree)
+        print("\nExtracting API elements from new file...")
         new_elements = self.extract_api_elements(new_tree)
 
         changes = {
@@ -232,10 +252,12 @@ class APIAnalyzer:
         
         for name, func in new_funcs.items():
             if name not in old_funcs:
+                print(f"New function detected: {name}")
                 changes["added"].append({"functions": [func]})
         
         for name, func in old_funcs.items():
             if name not in new_funcs:
+                print(f"Removed function detected: {name}")
                 changes["removed"].append({"functions": [func]})
 
         # Compare classes
@@ -244,12 +266,15 @@ class APIAnalyzer:
         
         for name, cls in new_classes.items():
             if name not in old_classes:
+                print(f"New class detected: {name}")
                 changes["added"].append({"classes": [cls]})
         
         for name, cls in old_classes.items():
             if name not in new_classes:
+                print(f"Removed class detected: {name}")
                 changes["removed"].append({"classes": [cls]})
 
+        print(f"\nChanges detected: {len(changes['added'])} additions, {len(changes['removed'])} removals")
         return changes
 
 if __name__ == "__main__":
@@ -261,12 +286,14 @@ if __name__ == "__main__":
     old_file = sys.argv[1]
     new_file = sys.argv[2]
 
+    print(f"Starting analysis with OpenAI API key: {bool(analyzer.openai_client)}")
+    
     changes = analyzer.analyze_changes(old_file, new_file)
     
     if changes:
         doc_update = analyzer.generate_doc_update(changes, new_file)
         if doc_update:
-            print("Documentation update required:")
+            print("\nDocumentation update generated:")
             print(doc_update)
             
             # Create PR if running in GitHub Actions
