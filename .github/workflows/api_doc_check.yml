@@ -33,11 +33,21 @@ jobs:
       - name: Get changed Python files
         id: changed-files
         run: |
-          git fetch --all --unshallow
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'src/api/**/*.py' > modified_files.txt
-          CHANGED_FILES=$(cat modified_files.txt)
-          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-          echo "Changed files: $CHANGED_FILES"
+          # First try to fetch all history
+          git fetch --all || true
+          
+          # Get the list of changed files
+          git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'src/api/**/*.py' > modified_files.txt || true
+          
+          # Read the file and set environment variable
+          if [ -f modified_files.txt ]; then
+            CHANGED_FILES=$(cat modified_files.txt)
+            echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+            echo "Changed files: $CHANGED_FILES"
+          else
+            echo "No modified files found"
+            echo "CHANGED_FILES=" >> $GITHUB_ENV
+          fi
 
       - name: Analyze Python Changes
         id: analyze
