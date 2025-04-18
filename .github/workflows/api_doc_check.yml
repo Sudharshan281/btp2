@@ -30,28 +30,46 @@ jobs:
           python -m pip install --upgrade pip
           pip install PyGithub openai
 
+      - name: Debug Git Info
+        run: |
+          echo "Current commit: $(git rev-parse HEAD)"
+          echo "Previous commit: $(git rev-parse HEAD^)"
+          echo "All commits:"
+          git log --oneline -n 5
+          echo "Files in src/api:"
+          ls -la src/api/
+          echo "Git status:"
+          git status
+
       - name: Get changed Python files
         id: changed-files
         run: |
-          # First try to fetch all history
-          git fetch --all || true
+          # Get the previous commit hash
+          PREV_COMMIT=$(git rev-parse HEAD^)
+          echo "Previous commit: $PREV_COMMIT"
+          echo "Current commit: ${{ github.sha }}"
           
-          # Get the list of changed files
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'src/api/**/*.py' > modified_files.txt || true
+          # Get the list of changed files with full diff
+          echo "Full diff:"
+          git diff --name-status $PREV_COMMIT ${{ github.sha }}
           
-          # Read the file and set environment variable
+          # Get Python file changes
+          git diff --name-only $PREV_COMMIT ${{ github.sha }} -- 'src/api/**/*.py' > modified_files.txt
+          
           if [ -f modified_files.txt ]; then
             CHANGED_FILES=$(cat modified_files.txt)
-            echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-            echo "Changed files: $CHANGED_FILES"
+            if [ ! -z "$CHANGED_FILES" ]; then
+              echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+              echo "Changed Python files: $CHANGED_FILES"
+            else
+              echo "No Python files changed"
+            fi
           else
-            echo "No modified files found"
-            echo "CHANGED_FILES=" >> $GITHUB_ENV
+            echo "No modified_files.txt found"
           fi
 
       - name: Analyze Python Changes
-        id: analyze
-        if: ${{ env.CHANGED_FILES != '' }}
+        if: env.CHANGED_FILES != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -60,7 +78,8 @@ jobs:
           for file in $CHANGED_FILES; do
             if [ -f "$file" ]; then
               echo "Analyzing changes in $file"
-              python scripts/analyze_py_changes.py "${{ github.event.before }}:$file" "$file"
+              PREV_COMMIT=$(git rev-parse HEAD^)
+              python scripts/analyze_py_changes.py <(git show $PREV_COMMIT:$file) "$file"
             fi
           done
 
