@@ -130,16 +130,16 @@ def calculate_square_root(number: float) -> float:
     Calculate the square root of a number.
     
     Args:
-        number (float): The number to calculate the square root of
+        number (float): The number to calculate the square root of.
         
     Returns:
-        float: The square root of the number
+        float: The square root of the number.
         
     Raises:
-        ValueError: If the number is negative
+        ValueError: If the number is negative.
     """
     if number < 0:
-        raise ValueError("Cannot calculate square root of negative number")
+        raise ValueError("Cannot calculate square root of a negative number")
     return number ** 0.5
 
 def calculate_cube(number: float) -> float:
