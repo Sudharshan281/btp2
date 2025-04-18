@@ -110,6 +110,19 @@ def calculate_absolute_difference(a: float, b: float) -> float:
     """
     return abs(a - b)
 
+def calculate_power(base: float, exponent: float) -> float:
+    """
+    Calculate the power of a number.
+    
+    Args:
+        base (float): The base number
+        exponent (float): The exponent
+        
+    Returns:
+        float: The result of base raised to the power of exponent
+    """
+    return base ** exponent
+
 class Calculator:
     """A simple calculator class."""
     
