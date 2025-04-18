@@ -2,6 +2,8 @@
 Test module for documentation update workflow.
 """
 
+import math
+
 def calculate_sum(a: int, b: int) -> int:
     """Calculate the sum of two numbers.
     
@@ -151,6 +153,26 @@ def calculate_cube(number: float) -> float:
         float: The cube of the number
     """
     return number ** 3
+
+def calculate_logarithm(number: float, base: float = 10.0) -> float:
+    """
+    Calculate the logarithm of a number with a specified base.
+    
+    Args:
+        number (float): The number to calculate the logarithm of
+        base (float, optional): The base of the logarithm. Defaults to 10.0.
+        
+    Returns:
+        float: The logarithm of the number with the specified base
+        
+    Raises:
+        ValueError: If the number is less than or equal to 0 or if the base is less than or equal to 0 or equal to 1
+    """
+    if number <= 0:
+        raise ValueError("Cannot calculate logarithm of non-positive number")
+    if base <= 0 or base == 1:
+        raise ValueError("Base must be positive and not equal to 1")
+    return math.log(number, base)
 
 class Calculator:
     """A simple calculator class."""
