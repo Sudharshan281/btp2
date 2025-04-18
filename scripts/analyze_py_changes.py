@@ -13,6 +13,12 @@ def get_repo_name():
 
 def get_file_content(file_path: str) -> str:
     try:
+        # First try to read the file directly
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
+                return f.read()
+        
+        # If file doesn't exist locally, try git show
         result = subprocess.run(['git', 'show', f'HEAD:{file_path}'], 
                               capture_output=True, text=True)
         if result.returncode == 0:
@@ -187,32 +193,9 @@ def analyze_changes(file_path: str):
         for change in changes:
             print(f"- {change['type']}: {change['name']}")
         
-        # Check if README needs updates
-        readme_path = os.path.join(os.path.dirname(file_path), 'README.md')
-        if not os.path.exists(readme_path):
-            print(f"README.md not found at {readme_path}")
-            create_readme_issue(file_path, changes)
-            return
-            
-        current_readme = get_file_content(readme_path)
-        if not current_readme:
-            print("Could not read README.md")
-            create_readme_issue(file_path, changes)
-            return
-            
-        # Check if any new functions/classes are not documented in README
-        needs_update = False
-        for change in changes:
-            if change['type'] == 'added':
-                if change['name'] not in current_readme:
-                    print(f"Function/class '{change['name']}' not found in README")
-                    needs_update = True
-                    
-        if needs_update:
-            print("README needs updates")
-            create_readme_issue(file_path, changes)
-        else:
-            print("README is up to date")
+        # Create issue for the changes
+        create_readme_issue(file_path, changes)
+        
     except Exception as e:
         error_msg = f"Error analyzing changes: {str(e)}"
         print(error_msg)
