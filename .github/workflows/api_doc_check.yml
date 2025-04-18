@@ -31,10 +31,20 @@ jobs:
           pip install -r requirements.txt
           pip install PyGithub
       
+      - name: Debug Git History
+        run: |
+          echo "Current commit:"
+          git log -1 --pretty=format:"%H %s"
+          echo "Previous commit:"
+          git log -2 --pretty=format:"%H %s"
+          echo "Modified files:"
+          git diff --name-only HEAD^ HEAD
+      
       - name: Check for Python file changes
         id: check_changes
         run: |
           MODIFIED_FILES=$(git diff --name-only HEAD^ HEAD -- 'src/**/*.py')
+          echo "Modified Python files: $MODIFIED_FILES"
           if [ -n "$MODIFIED_FILES" ]; then
             echo "modified_files=$MODIFIED_FILES" >> $GITHUB_OUTPUT
             echo "changes_detected=true" >> $GITHUB_OUTPUT
@@ -51,5 +61,9 @@ jobs:
         run: |
           for file in ${{ steps.check_changes.outputs.modified_files }}; do
             echo "Analyzing changes in $file"
+            echo "Current content:"
+            git show HEAD:$file
+            echo "Previous content:"
+            git show HEAD^:$file
             python scripts/analyze_py_changes.py "$file" || true
           done

@@ -13,16 +13,21 @@ def get_repo_name():
 
 def get_file_content(file_path: str) -> str:
     try:
+        print(f"Attempting to read file: {file_path}")
         # First try to read the file directly
         if os.path.exists(file_path):
+            print("File exists locally, reading directly")
             with open(file_path, 'r') as f:
                 return f.read()
         
         # If file doesn't exist locally, try git show
+        print("File not found locally, trying git show")
         result = subprocess.run(['git', 'show', f'HEAD:{file_path}'], 
                               capture_output=True, text=True)
         if result.returncode == 0:
+            print("Successfully retrieved file content from git")
             return result.stdout
+        print(f"Failed to get file content from git: {result.stderr}")
         return ""
     except Exception as e:
         print(f"Error getting file content: {e}")
@@ -30,10 +35,13 @@ def get_file_content(file_path: str) -> str:
 
 def get_previous_version(file_path: str) -> str:
     try:
+        print(f"Attempting to get previous version of: {file_path}")
         result = subprocess.run(['git', 'show', f'HEAD^:{file_path}'], 
                               capture_output=True, text=True)
         if result.returncode == 0:
+            print("Successfully retrieved previous version from git")
             return result.stdout
+        print(f"Failed to get previous version from git: {result.stderr}")
         return ""
     except Exception as e:
         print(f"Error getting previous version: {e}")
@@ -172,6 +180,9 @@ def analyze_changes(file_path: str):
         current_content = get_file_content(file_path)
         previous_content = get_previous_version(file_path)
         
+        print(f"Current content length: {len(current_content)}")
+        print(f"Previous content length: {len(previous_content)}")
+        
         if not current_content:
             error_msg = f"Could not get current content for {file_path}"
             print(error_msg)
@@ -181,6 +192,9 @@ def analyze_changes(file_path: str):
         # Extract API elements from both versions
         current_elements = extract_api_elements(current_content)
         previous_elements = extract_api_elements(previous_content) if previous_content else []
+        
+        print(f"Current elements: {len(current_elements)}")
+        print(f"Previous elements: {len(previous_elements)}")
         
         # Find changes
         changes = find_changes(previous_elements, current_elements)
