@@ -504,4 +504,13 @@ def test_function():
     Returns:
         str: A test message
     """
-    return "This is a test function to trigger the workflow" 
+    return "This is a test function to trigger the workflow"
+
+def test_workflow_function():
+    """
+    A test function to verify workflow changes.
+    
+    Returns:
+        str: A test message
+    """
+    return "This is a test function to verify workflow changes" 
