@@ -383,10 +383,15 @@ def create_readme_issue(py_file: str, changes: List[Dict[str, Any]]):
     
     if not token or not repo_name:
         print("Missing GitHub token or repository name")
+        print("Would create issue with the following content:")
+        print(f"Title: README Update Needed for {os.path.basename(py_file)}")
+        print("Changes:")
+        for change in changes:
+            print(f"- {change['type'].title()}: {change['name']}")
         return
         
-    g = Github(token)
     try:
+        g = Github(token)
         repo = g.get_repo(repo_name)
         
         # Format changes for the issue
@@ -412,6 +417,9 @@ Please review and update the README.md file to reflect these changes.
         print(f"Created issue for README updates")
     except Exception as e:
         print(f"Error creating issue: {str(e)}")
+        print("Would create issue with the following content:")
+        print(f"Title: {issue_title}")
+        print(f"Body: {issue_body}")
 
 def analyze_changes(file_path: str):
     """Analyze changes in a Python file and check if README needs updates."""
@@ -432,8 +440,36 @@ def analyze_changes(file_path: str):
     # Find changes
     changes = find_changes(previous_elements, current_elements)
     
+    if not changes:
+        print("No changes detected")
+        return
+        
+    print(f"Detected {len(changes)} changes:")
+    for change in changes:
+        print(f"- {change['type']}: {change['name']}")
+    
     # Check if README needs updates
-    if check_readme_updates(file_path, changes):
+    readme_path = os.path.join(os.path.dirname(file_path), 'README.md')
+    if not os.path.exists(readme_path):
+        print(f"README.md not found at {readme_path}")
+        create_readme_issue(file_path, changes)
+        return
+        
+    current_readme = get_file_content(readme_path)
+    if not current_readme:
+        print("Could not read README.md")
+        create_readme_issue(file_path, changes)
+        return
+        
+    # Check if any new functions/classes are not documented in README
+    needs_update = False
+    for change in changes:
+        if change['type'] == 'added':
+            if change['name'] not in current_readme:
+                print(f"Function/class '{change['name']}' not found in README")
+                needs_update = True
+                
+    if needs_update:
         print("README needs updates")
         create_readme_issue(file_path, changes)
     else:
