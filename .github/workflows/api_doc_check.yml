@@ -1,25 +1,24 @@
-name: Documentation Update Check
+name: API Documentation Check
 
 on:
   push:
-    branches:
-      - main
-      - master
-  pull_request:
-    branches:
-      - main
-      - master
+    branches: [ main ]
+    paths:
+      - 'src/**/*.py'
+      - '.github/workflows/api_doc_check.yml'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   check_doc_updates:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 2  # Need at least 2 commits for git show HEAD^
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -31,29 +30,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Get changed Python files
+      - name: Get changed files
         id: changed-files
         run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- '**/*.py' || git diff --name-only HEAD^ HEAD -- '**/*.py')
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} -- '**/*.py' || git diff --name-only HEAD^ HEAD -- '**/*.py')
           if [ -n "$CHANGED_FILES" ]; then
             echo "files<<EOF" >> $GITHUB_OUTPUT
             echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           fi
 
-      - name: Analyze changes and create documentation PR
-        if: steps.changed-files.outputs.files != ''
+      - name: Test API key
+        run: python scripts/test_api.py
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Process changes
         run: |
-          # Test API key first
-          python scripts/test_api.py
-          
-          # Process each changed file
           while IFS= read -r file; do
             if [ -n "$file" ]; then
               echo "Analyzing changes in $file"
               python scripts/analyze_py_changes.py "$file"
             fi
           done <<< "${{ steps.changed-files.outputs.files }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
