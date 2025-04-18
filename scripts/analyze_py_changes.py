@@ -228,6 +228,42 @@ This is an automated PR created because the OpenAI API key is not available. Ple
         except Exception as e:
             print(f"Error creating PR: {str(e)}")
 
+    def create_documentation_issue(self, file_path: str, changes: List[str]) -> None:
+        """Create a GitHub issue to track documentation updates needed."""
+        if not self.github or not self.repo_name:
+            print("GitHub credentials not available")
+            return
+
+        try:
+            repo = self.github.get_repo(self.repo_name)
+            
+            # Create issue content
+            issue_title = f"Documentation Update Needed for {file_path}"
+            issue_body = f"""# Documentation Update Needed
+
+The file `{file_path}` has been modified. Please review and update the documentation for the following changes:
+
+{chr(10).join(f"- {change}" for change in changes)}
+
+This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.
+
+## Steps to Update Documentation:
+1. Review the changes in `{file_path}`
+2. Update the corresponding documentation in `src/api/{Path(file_path).stem}.md`
+3. Create a pull request with the documentation updates
+"""
+
+            # Create issue
+            issue = repo.create_issue(
+                title=issue_title,
+                body=issue_body,
+                labels=["documentation", "help wanted"]
+            )
+            print(f"Created issue #{issue.number}")
+
+        except Exception as e:
+            print(f"Error creating issue: {str(e)}")
+
     def analyze_changes(self, file_path: str) -> None:
         """Analyze changes in a Python file and generate documentation."""
         print(f"Analyzing changes for {file_path}")
@@ -274,13 +310,17 @@ This is an automated PR created because the OpenAI API key is not available. Ple
                 )
                 doc_content = response.choices[0].message.content
                 
-                # Create PR with OpenAI-generated documentation
-                self.create_pr(file_path, doc_content)
+                # Create documentation file
+                doc_path = f"src/api/{Path(file_path).stem}.md"
+                with open(doc_path, 'w', encoding='utf-8') as f:
+                    f.write(doc_content)
+                
+                print(f"Created documentation at {doc_path}")
                 
             except Exception as e:
                 print(f"Error generating documentation with LLM: {str(e)}")
-                # Create simple PR instead
-                self.create_simple_pr(file_path, changes)
+                # Create issue instead
+                self.create_documentation_issue(file_path, changes)
 
         except Exception as e:
             print(f"Error analyzing changes: {str(e)}")
@@ -290,7 +330,6 @@ if __name__ == "__main__":
         print("Usage: python analyze_py_changes.py <file_path>")
         sys.exit(1)
 
-    analyzer = CodeAnalyzer()
     file_path = sys.argv[1]
-
+    analyzer = CodeAnalyzer()
     analyzer.analyze_changes(file_path)
