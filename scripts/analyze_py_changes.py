@@ -51,6 +51,20 @@ def get_file_content(file_path: str) -> str:
     except Exception as e:
         print(f"Error reading file directly: {e}")
     
+    # Try GitHub API if we have a token
+    token, repo = get_env_vars()
+    if token and repo:
+        try:
+            print(f"Attempting to get file content using GitHub API: {file_path}")
+            g = Github(token)
+            repo_obj = g.get_repo(repo)
+            content = repo_obj.get_contents(file_path, ref="HEAD").decoded_content.decode('utf-8')
+            if not content:
+                print(f"WARNING: GitHub API returned empty content for {file_path}")
+            return content
+        except Exception as e:
+            print(f"Error getting file content from GitHub API: {e}")
+    
     # Fallback to git show
     try:
         print(f"Attempting to get file content using git show: {file_path}")
@@ -70,6 +84,26 @@ def get_previous_content(file_path: str) -> str:
         print("ERROR: Invalid file path provided")
         return None
         
+    # Try GitHub API if we have a token
+    token, repo = get_env_vars()
+    if token and repo:
+        try:
+            print(f"Attempting to get previous version using GitHub API: {file_path}")
+            g = Github(token)
+            repo_obj = g.get_repo(repo)
+            # Get the previous commit
+            commits = repo_obj.get_commits(path=file_path)
+            if commits.totalCount > 1:
+                prev_commit = commits[1]
+                content = repo_obj.get_contents(file_path, ref=prev_commit.sha).decoded_content.decode('utf-8')
+                if not content:
+                    print(f"WARNING: Previous version of {file_path} is empty")
+                print("Successfully retrieved previous version from GitHub API")
+                return content
+        except Exception as e:
+            print(f"Error getting previous version from GitHub API: {e}")
+    
+    # Fallback to git show
     try:
         print(f"Attempting to get previous version from git: {file_path}")
         result = subprocess.run(['git', 'show', f'HEAD^:{file_path}'], 
