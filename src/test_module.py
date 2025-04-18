@@ -26,6 +26,17 @@ def calculate_product(a: int, b: int) -> int:
     """
     return a * b
 
+def calculate_average(numbers: list[float]) -> float:
+    """Calculate the average of a list of numbers.
+    
+    Args:
+        numbers: List of numbers to average
+        
+    Returns:
+        Average of the numbers
+    """
+    return sum(numbers) / len(numbers) if numbers else 0.0
+
 class Calculator:
     """A simple calculator class."""
     
@@ -57,4 +68,32 @@ class Calculator:
             Product of x and y
         """
         self.result = x * y
+        return self.result
+
+class AdvancedCalculator(Calculator):
+    """An advanced calculator that extends the basic calculator with more operations."""
+    
+    def power(self, x: float, y: float) -> float:
+        """Calculate x raised to the power of y.
+        
+        Args:
+            x: Base number
+            y: Exponent
+            
+        Returns:
+            x raised to the power of y
+        """
+        self.result = x ** y
+        return self.result
+        
+    def square_root(self, x: float) -> float:
+        """Calculate the square root of a number.
+        
+        Args:
+            x: Number to find square root of
+            
+        Returns:
+            Square root of x
+        """
+        self.result = x ** 0.5
         return self.result 
