@@ -1,46 +1,55 @@
-name: Documentation Check
+name: Check Documentation Updates
 
 on:
   push:
     branches: [ main ]
     paths:
       - 'src/**/*.py'
-      - 'src/**/README.md'
+      - 'README.md'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   check-docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 2
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install PyGithub
-
-    - name: Check README Updates
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
-      run: |
-        MODIFIED_FILE=$(git diff --name-only HEAD^ HEAD -- 'src/**/*.py' | head -n 1)
-        if [ -n "$MODIFIED_FILE" ]; then
-          echo "Analyzing changes in $MODIFIED_FILE"
-          python scripts/analyze_py_changes.py "$MODIFIED_FILE" || true
-        else
-          echo "No Python files modified"
-        fi
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install PyGithub
+      
+      - name: Check for Python file changes
+        id: check_changes
+        run: |
+          MODIFIED_FILES=$(git diff --name-only HEAD^ HEAD -- 'src/**/*.py')
+          if [ -n "$MODIFIED_FILES" ]; then
+            echo "modified_files=$MODIFIED_FILES" >> $GITHUB_OUTPUT
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Analyze changes and create issue if needed
+        if: steps.check_changes.outputs.changes_detected == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          for file in ${{ steps.check_changes.outputs.modified_files }}; do
+            echo "Analyzing changes in $file"
+            python scripts/analyze_py_changes.py "$file" || true
+          done
