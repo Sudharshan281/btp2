@@ -123,6 +123,23 @@ def calculate_power(base: float, exponent: float) -> float:
     """
     return base ** exponent
 
+def calculate_square_root(number: float) -> float:
+    """
+    Calculate the square root of a number.
+    
+    Args:
+        number (float): The number to calculate the square root of
+        
+    Returns:
+        float: The square root of the number
+        
+    Raises:
+        ValueError: If the number is negative
+    """
+    if number < 0:
+        raise ValueError("Cannot calculate square root of negative number")
+    return number ** 0.5
+
 class Calculator:
     """A simple calculator class."""
     
