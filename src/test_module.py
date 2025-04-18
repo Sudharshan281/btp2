@@ -174,6 +174,18 @@ def calculate_logarithm(number: float, base: float = 10.0) -> float:
         raise ValueError("Base must be positive and not equal to 1")
     return math.log(number, base)
 
+def calculate_exponential(x: float) -> float:
+    """
+    Calculate the exponential of a number.
+    
+    Args:
+        x (float): The number to calculate the exponential of
+        
+    Returns:
+        float: The exponential of x (e^x)
+    """
+    return math.exp(x)
+
 class Calculator:
     """A simple calculator class."""
     
