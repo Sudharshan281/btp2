@@ -9,6 +9,7 @@ from pathlib import Path
 import github
 from github import Github
 import openai
+import time
 
 class CodeAnalyzer:
     def __init__(self):
@@ -169,104 +170,120 @@ class CodeAnalyzer:
         
         return pr
 
-    def analyze_changes(self, file_path: str) -> Dict:
-        """Analyze changes between two versions of a Python file using AST."""
-        print(f"\nAnalyzing changes for {file_path}")
-        
-        # Get the current content
-        try:
-            with open(file_path, 'r') as f:
-                new_content = f.read()
-        except FileNotFoundError:
-            print(f"Error: {file_path} does not exist.")
-            return None
+    def create_simple_pr(self, file_path: str, changes: List[str]) -> None:
+        """Create a simple PR with basic documentation update message."""
+        if not self.github or not self.repo_name:
+            print("GitHub credentials not available")
+            return
 
-        # Get the previous version from git
         try:
-            result = subprocess.run(
-                ['git', 'show', 'HEAD^:' + file_path],
-                capture_output=True,
-                text=True
+            repo = self.github.get_repo(self.repo_name)
+            branch_name = f"docs-update-{int(time.time())}"
+            
+            # Create new branch
+            main_branch = repo.get_branch("main")
+            repo.create_git_ref(
+                ref=f"refs/heads/{branch_name}",
+                sha=main_branch.commit.sha
             )
-            old_content = result.stdout if result.returncode == 0 else ""
+
+            # Create simple documentation
+            doc_content = f"""# Documentation Update Needed
+
+The file `{file_path}` has been modified. Please review and update the documentation for the following changes:
+
+{chr(10).join(f"- {change}" for change in changes)}
+
+This is an automated PR created because the OpenAI API key is not available. Please manually update the documentation as needed.
+"""
+
+            # Create or update documentation file
+            doc_path = f"src/api/{Path(file_path).stem}.md"
+            try:
+                contents = repo.get_contents(doc_path, ref=branch_name)
+                repo.update_file(
+                    path=doc_path,
+                    message="Update documentation",
+                    content=doc_content,
+                    sha=contents.sha,
+                    branch=branch_name
+                )
+            except github.GithubException:
+                repo.create_file(
+                    path=doc_path,
+                    message="Create documentation",
+                    content=doc_content,
+                    branch=branch_name
+                )
+
+            # Create PR
+            pr = repo.create_pull(
+                title=f"Docs: Update documentation for {file_path}",
+                body="This PR was created automatically to track documentation updates needed for recent code changes.",
+                head=branch_name,
+                base="main"
+            )
+            print(f"Created PR #{pr.number}")
+
         except Exception as e:
-            print(f"Error getting previous version: {e}")
-            old_content = ""
+            print(f"Error creating PR: {str(e)}")
 
-        # Parse ASTs
-        old_tree = self.parse_ast(old_content)
-        new_tree = self.parse_ast(new_content)
-
-        if new_tree is None:
-            return None
-
-        # Extract elements from both versions
-        old_elements = self.extract_code_elements(old_tree) if old_tree else {"functions": [], "classes": [], "imports": [], "constants": []}
-        new_elements = self.extract_code_elements(new_tree)
-
-        changes = {
-            "added": [],
-            "removed": []
-        }
-
-        # Compare functions
-        old_funcs = {f["name"]: f for f in old_elements["functions"]}
-        new_funcs = {f["name"]: f for f in new_elements["functions"]}
+    def analyze_changes(self, file_path: str) -> None:
+        """Analyze changes in a Python file and generate documentation."""
+        print(f"Analyzing changes for {file_path}")
         
-        for name, func in new_funcs.items():
-            if name not in old_funcs:
-                changes["added"].append({"functions": [func]})
-            elif func != old_funcs[name]:
-                changes["added"].append({"functions": [func]})
-                changes["removed"].append({"functions": [old_funcs[name]]})
-        
-        for name, func in old_funcs.items():
-            if name not in new_funcs:
-                changes["removed"].append({"functions": [func]})
+        try:
+            # Get current content
+            with open(file_path, 'r', encoding='utf-8') as f:
+                new_content = f.read()
 
-        # Compare classes
-        old_classes = {c["name"]: c for c in old_elements["classes"]}
-        new_classes = {c["name"]: c for c in new_elements["classes"]}
-        
-        for name, cls in new_classes.items():
-            if name not in old_classes:
-                changes["added"].append({"classes": [cls]})
-            elif cls != old_classes[name]:
-                changes["added"].append({"classes": [cls]})
-                changes["removed"].append({"classes": [old_classes[name]]})
-        
-        for name, cls in old_classes.items():
-            if name not in new_classes:
-                changes["removed"].append({"classes": [cls]})
+            # Get previous version from git
+            try:
+                old_content = subprocess.run(
+                    ['git', 'show', f'HEAD^:{file_path}'],
+                    capture_output=True,
+                    text=True
+                ).stdout
+            except subprocess.CalledProcessError:
+                print(f"Could not find previous version of {file_path}")
+                return
 
-        # Compare imports
-        old_imports = {i["name"]: i for i in old_elements["imports"]}
-        new_imports = {i["name"]: i for i in new_elements["imports"]}
-        
-        for name, imp in new_imports.items():
-            if name not in old_imports:
-                changes["added"].append({"imports": [imp]})
-        
-        for name, imp in old_imports.items():
-            if name not in new_imports:
-                changes["removed"].append({"imports": [imp]})
+            # Extract changes
+            changes = []
+            for line in difflib.unified_diff(
+                old_content.splitlines(),
+                new_content.splitlines(),
+                fromfile='old',
+                tofile='new',
+                lineterm=''
+            ):
+                if line.startswith('+') and not line.startswith('+++'):
+                    changes.append(line[1:].strip())
 
-        # Compare constants
-        old_constants = {c["name"]: c for c in old_elements["constants"]}
-        new_constants = {c["name"]: c for c in new_elements["constants"]}
-        
-        for name, const in new_constants.items():
-            if name not in old_constants:
-                changes["added"].append({"constants": [const]})
-            elif const != old_constants[name]:
-                changes["added"].append({"constants": [const]})
-                changes["removed"].append({"constants": [old_constants[name]]})
-        
-        for name, const in old_constants.items():
-            if name not in new_constants:
-                changes["removed"].append({"constants": [const]})
+            # Try to use OpenAI for documentation
+            try:
+                if not self.openai_client.api_key:
+                    raise Exception("No OpenAI API key available")
+                
+                response = self.openai_client.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a documentation generator. Create clear, concise documentation for Python code changes."},
+                        {"role": "user", "content": f"Generate documentation for these changes:\n{chr(10).join(changes)}"}
+                    ]
+                )
+                doc_content = response.choices[0].message.content
+                
+                # Create PR with OpenAI-generated documentation
+                self.create_pr(file_path, doc_content)
+                
+            except Exception as e:
+                print(f"Error generating documentation with LLM: {str(e)}")
+                # Create simple PR instead
+                self.create_simple_pr(file_path, changes)
 
-        return changes
+        except Exception as e:
+            print(f"Error analyzing changes: {str(e)}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -276,23 +293,4 @@ if __name__ == "__main__":
     analyzer = CodeAnalyzer()
     file_path = sys.argv[1]
 
-    changes = analyzer.analyze_changes(file_path)
-    
-    if changes:
-        doc_update = analyzer.generate_doc_update(changes, file_path)
-        if doc_update:
-            print("\nDocumentation update generated:")
-            print(doc_update)
-            
-            # Create PR if running in GitHub Actions
-            if analyzer.github_token:
-                branch_name = f"docs-update/{os.path.basename(file_path)}-{os.getenv('GITHUB_RUN_ID')}"
-                pr = analyzer.create_pull_request(
-                    title=f"Documentation Update for {os.path.basename(file_path)}",
-                    body=doc_update,
-                    branch_name=branch_name
-                )
-                if pr:
-                    print(f"Created PR: {pr.html_url}")
-    else:
-        print("No significant changes detected.")
+    analyzer.analyze_changes(file_path)
