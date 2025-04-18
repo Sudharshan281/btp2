@@ -3,6 +3,7 @@ Test module for documentation update workflow.
 """
 
 import math
+from typing import List
 
 def calculate_sum(a: int, b: int) -> int:
     """Calculate the sum of two numbers.
@@ -118,7 +119,7 @@ def calculate_power(base: float, exponent: float) -> float:
     
     Args:
         base (float): The base number
-        exponent (float): The exponent to raise the base to
+        exponent (float): The exponent
         
     Returns:
         float: The result of base raised to the power of exponent
@@ -156,22 +157,20 @@ def calculate_cube(number: float) -> float:
 
 def calculate_logarithm(number: float, base: float = 10.0) -> float:
     """
-    Calculate the logarithm of a number with a specified base.
+    Calculate the logarithm of a number.
     
     Args:
         number (float): The number to calculate the logarithm of
-        base (float, optional): The base of the logarithm. Defaults to 10.0.
+        base (float, optional): The logarithm base. Defaults to 10.0.
         
     Returns:
         float: The logarithm of the number with the specified base
         
     Raises:
-        ValueError: If the number is less than or equal to 0 or if the base is less than or equal to 0 or equal to 1
+        ValueError: If number is less than or equal to 0 or base is less than or equal to 0
     """
-    if number <= 0:
-        raise ValueError("Cannot calculate logarithm of non-positive number")
-    if base <= 0 or base == 1:
-        raise ValueError("Base must be positive and not equal to 1")
+    if number <= 0 or base <= 0:
+        raise ValueError("Number and base must be positive")
     return math.log(number, base)
 
 def calculate_exponential(x: float) -> float:
@@ -197,6 +196,46 @@ def calculate_sine(x: float) -> float:
         float: The sine of x
     """
     return math.sin(x)
+
+def calculate_permutation(n: int, r: int) -> int:
+    """
+    Calculate the number of permutations of n items taken r at a time.
+    
+    Args:
+        n (int): Total number of items
+        r (int): Number of items to choose
+        
+    Returns:
+        int: Number of permutations
+        
+    Raises:
+        ValueError: If n or r is negative, or if r > n
+    """
+    if n < 0 or r < 0:
+        raise ValueError("n and r must be non-negative")
+    if r > n:
+        raise ValueError("r cannot be greater than n")
+    return math.factorial(n) // math.factorial(n - r)
+
+def calculate_combination(n: int, r: int) -> int:
+    """
+    Calculate the number of combinations of n items taken r at a time.
+    
+    Args:
+        n (int): Total number of items
+        r (int): Number of items to choose
+        
+    Returns:
+        int: Number of combinations
+        
+    Raises:
+        ValueError: If n or r is negative, or if r > n
+    """
+    if n < 0 or r < 0:
+        raise ValueError("n and r must be non-negative")
+    if r > n:
+        raise ValueError("r cannot be greater than n")
+    return math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
 
 class Calculator:
     """A simple calculator class."""
@@ -395,4 +434,65 @@ class AdvancedCalculator(Calculator):
         Returns:
             float: Absolute difference between a and b
         """
-        return calculate_absolute_difference(a, b) 
+        return calculate_absolute_difference(a, b)
+
+class StatisticsCalculator:
+    """
+    A class for performing statistical calculations.
+    """
+    
+    def __init__(self, data: List[float]):
+        """
+        Initialize the calculator with a dataset.
+        
+        Args:
+            data (List[float]): List of numerical values
+        """
+        self.data = data
+        
+    def mean(self) -> float:
+        """
+        Calculate the arithmetic mean of the dataset.
+        
+        Returns:
+            float: The mean value
+        """
+        return sum(self.data) / len(self.data)
+        
+    def median(self) -> float:
+        """
+        Calculate the median of the dataset.
+        
+        Returns:
+            float: The median value
+        """
+        sorted_data = sorted(self.data)
+        n = len(sorted_data)
+        if n % 2 == 1:
+            return sorted_data[n // 2]
+        return (sorted_data[n // 2 - 1] + sorted_data[n // 2]) / 2
+        
+    def mode(self) -> List[float]:
+        """
+        Calculate the mode(s) of the dataset.
+        
+        Returns:
+            List[float]: List of mode values
+        """
+        frequency = {}
+        for value in self.data:
+            frequency[value] = frequency.get(value, 0) + 1
+        max_freq = max(frequency.values())
+        return [value for value, freq in frequency.items() if freq == max_freq]
+        
+    def standard_deviation(self) -> float:
+        """
+        Calculate the standard deviation of the dataset.
+        
+        Returns:
+            float: The standard deviation
+        """
+        mean = self.mean()
+        squared_diff = [(x - mean) ** 2 for x in self.data]
+        variance = sum(squared_diff) / len(self.data)
+        return math.sqrt(variance) 
