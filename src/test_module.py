@@ -531,4 +531,26 @@ def test_workflow_function():
     Returns:
         str: A test message
     """
-    return "This is a test function to verify workflow changes" 
+    return "This is a test function to verify workflow changes"
+
+def generate_random_string(length: int) -> str:
+    """
+    Generate a random string of specified length.
+    
+    Args:
+        length (int): The length of the random string to generate.
+        
+    Returns:
+        str: A random string containing uppercase letters, lowercase letters, and digits.
+        
+    Raises:
+        ValueError: If length is less than 1.
+    """
+    import random
+    import string
+    
+    if length < 1:
+        raise ValueError("Length must be at least 1")
+        
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length)) 
