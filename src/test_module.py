@@ -495,4 +495,13 @@ class StatisticsCalculator:
         mean = self.mean()
         squared_diff = [(x - mean) ** 2 for x in self.data]
         variance = sum(squared_diff) / len(self.data)
-        return math.sqrt(variance) 
+        return math.sqrt(variance)
+
+def test_function():
+    """
+    A test function to trigger the workflow.
+    
+    Returns:
+        str: A test message
+    """
+    return "This is a test function to trigger the workflow" 
