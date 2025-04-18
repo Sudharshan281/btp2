@@ -8,16 +8,16 @@ import re
 from pathlib import Path
 import github
 from github import Github
-from openai import OpenAI
+import openai
 
 class CodeAnalyzer:
     def __init__(self):
         self.github_token = os.getenv('GITHUB_TOKEN')
         self.repo_name = os.getenv('GITHUB_REPOSITORY')
         self.github = Github(self.github_token) if self.github_token else None
-        self.openai_client = OpenAI(
-            api_key=os.getenv('OPENAI_API_KEY')
-        ) if os.getenv('OPENAI_API_KEY') else None
+        self.openai_client = openai
+        if os.getenv('OPENAI_API_KEY'):
+            self.openai_client.api_key = os.getenv('OPENAI_API_KEY')
 
     def parse_ast(self, file_content: str) -> Optional[ast.AST]:
         """Parse Python code into an Abstract Syntax Tree (AST)."""
@@ -131,7 +131,7 @@ class CodeAnalyzer:
         """
 
         try:
-            response = self.openai_client.chat.completions.create(
+            response = self.openai_client.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "You are a technical documentation writer. Update the documentation to reflect code changes while maintaining the same format and style."},
