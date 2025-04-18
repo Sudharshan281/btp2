@@ -439,6 +439,29 @@ def analyze_changes(file_path: str):
     else:
         print("README is up to date")
 
+def generate_documentation_with_llm(changes):
+    """Generate documentation using OpenAI's GPT model."""
+    try:
+        client = openai.OpenAI(api_key=get_openai_key())
+        
+        prompt = f"""
+        Please analyze these code changes and suggest documentation updates:
+        {json.dumps(changes, indent=2)}
+        """
+        
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that analyzes code changes and suggests documentation updates."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error generating documentation with LLM: {str(e)}")
+        return None
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python analyze_py_changes.py <file_path>")
