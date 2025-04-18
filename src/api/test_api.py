@@ -41,6 +41,25 @@ def calculate_power(base: int, exponent: int) -> int:
     """
     return base ** exponent
 
+def calculate_factorial(n: int) -> int:
+    """
+    Calculate the factorial of a number.
+    
+    Args:
+        n (int): The number to calculate factorial for
+        
+    Returns:
+        int: Factorial of n
+        
+    Raises:
+        ValueError: If n is negative
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+    if n == 0:
+        return 1
+    return n * calculate_factorial(n - 1)
+
 class MathOperations:
     """
     A class for performing mathematical operations.
