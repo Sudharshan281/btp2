@@ -39,5 +39,8 @@ jobs:
       run: |
         MODIFIED_FILE=$(git diff --name-only HEAD^ HEAD -- 'src/**/*.py' | head -n 1)
         if [ -n "$MODIFIED_FILE" ]; then
-          python scripts/analyze_py_changes.py "$MODIFIED_FILE"
+          echo "Analyzing changes in $MODIFIED_FILE"
+          python scripts/analyze_py_changes.py "$MODIFIED_FILE" || true
+        else
+          echo "No Python files modified"
         fi

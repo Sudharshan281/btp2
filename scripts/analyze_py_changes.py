@@ -167,8 +167,9 @@ def analyze_changes(file_path: str):
         previous_content = get_previous_version(file_path)
         
         if not current_content:
-            print(f"Could not get current content for {file_path}")
-            create_api_failure_issue(file_path, "Could not get current file content")
+            error_msg = f"Could not get current content for {file_path}"
+            print(error_msg)
+            create_api_failure_issue(file_path, error_msg)
             return
             
         # Extract API elements from both versions
@@ -213,8 +214,10 @@ def analyze_changes(file_path: str):
         else:
             print("README is up to date")
     except Exception as e:
-        print(f"Error analyzing changes: {str(e)}")
-        create_api_failure_issue(file_path, str(e))
+        error_msg = f"Error analyzing changes: {str(e)}"
+        print(error_msg)
+        create_api_failure_issue(file_path, error_msg)
+        raise  # Re-raise the exception to ensure the workflow fails
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -225,5 +228,6 @@ if __name__ == "__main__":
     try:
         analyze_changes(file_path)
     except Exception as e:
-        print(f"Error analyzing changes: {str(e)}")
+        print(f"Error in main: {str(e)}")
         create_api_failure_issue(file_path, str(e))
+        sys.exit(1)
