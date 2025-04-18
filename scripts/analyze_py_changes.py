@@ -8,7 +8,6 @@ import re
 from pathlib import Path
 import github
 from github import Github
-import openai
 from openai import OpenAI
 
 class CodeAnalyzer:
@@ -16,7 +15,9 @@ class CodeAnalyzer:
         self.github_token = os.getenv('GITHUB_TOKEN')
         self.repo_name = os.getenv('GITHUB_REPOSITORY')
         self.github = Github(self.github_token) if self.github_token else None
-        self.openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY')) if os.getenv('OPENAI_API_KEY') else None
+        self.openai_client = OpenAI(
+            api_key=os.getenv('OPENAI_API_KEY')
+        ) if os.getenv('OPENAI_API_KEY') else None
 
     def parse_ast(self, file_content: str) -> Optional[ast.AST]:
         """Parse Python code into an Abstract Syntax Tree (AST)."""

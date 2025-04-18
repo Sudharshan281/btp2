@@ -37,6 +37,19 @@ def calculate_average(numbers: list[float]) -> float:
     """
     return sum(numbers) / len(numbers) if numbers else 0.0
 
+def calculate_factorial(n: int) -> int:
+    """Calculate the factorial of a number.
+    
+    Args:
+        n: Number to calculate factorial of
+        
+    Returns:
+        Factorial of n
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+    return 1 if n <= 1 else n * calculate_factorial(n - 1)
+
 class Calculator:
     """A simple calculator class."""
     
@@ -96,4 +109,16 @@ class AdvancedCalculator(Calculator):
             Square root of x
         """
         self.result = x ** 0.5
+        return self.result
+        
+    def factorial(self, x: int) -> int:
+        """Calculate the factorial of a number.
+        
+        Args:
+            x: Number to calculate factorial of
+            
+        Returns:
+            Factorial of x
+        """
+        self.result = calculate_factorial(x)
         return self.result 
