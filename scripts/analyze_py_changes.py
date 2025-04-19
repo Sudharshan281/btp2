@@ -294,21 +294,33 @@ def create_api_failure_issue(py_file: str, error: str) -> None:
                 if source:
                     changes.append(source)
         
+        # Get the module name without extension
+        module_name = os.path.splitext(os.path.basename(py_file))[0]
+        
         # Create the issue body
-        body = f"The file {py_file} has been modified. Please review and update the documentation for the following changes:\n\n"
+        body = f"The file `{py_file}` has been modified. Please review and update the documentation for the following changes:\n\n"
         for change in changes:
             body += f"```python\n{change}\n```\n\n"
             
-        body += "This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.\n\n"
-        body += "Steps to Update Documentation:\n"
-        body += f"1. Review the changes in {py_file}\n"
-        body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(py_file))[0]}.md\n"
-        body += "3. Create a pull request with the documentation updates"
+        body += "## Documentation Files to Update\n\n"
+        body += f"1. `src/api/{module_name}.md` - API documentation\n"
+        body += f"2. `src/README.md` - Main documentation\n"
+        body += f"3. `src/api/README.md` - API overview\n\n"
         
-        # Create the issue
+        body += "## Steps to Update Documentation\n\n"
+        body += f"1. Review the changes in `{py_file}`\n"
+        body += f"2. Update the API documentation in `src/api/{module_name}.md`\n"
+        body += "3. Update the main documentation in `src/README.md` if needed\n"
+        body += "4. Update the API overview in `src/api/README.md` if needed\n"
+        body += "5. Create a pull request with the documentation updates\n\n"
+        
+        body += "This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed."
+        
+        # Create the issue with labels
         repo_obj.create_issue(
             title="Documentation Update Needed",
-            body=body
+            body=body,
+            labels=["documentation", "help wanted", "good first issue"]
         )
         print("Created issue for API failure")
     except Exception as e:
