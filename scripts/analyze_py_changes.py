@@ -366,14 +366,19 @@ def analyze_changes(file_path: str) -> None:
             print(f"No previous version found for {file_path}, treating as new file")
             current_elements = extract_api_elements(current_content)
             if current_elements:
-                title = f"Documentation Needed: New File {os.path.basename(file_path)}"
-                body = "New file detected with the following API elements:\n\n"
+                title = f"Documentation Update Needed for {file_path}"
+                body = f"The file {file_path} has been modified. Please review and update the documentation for the following changes:\n\n"
                 for name, element in current_elements.items():
-                    body += f"- {name} ({element['type']})\n"
-                    if element.get('signature'):
-                        body += f"  Signature: {element['signature']}\n"
-                    if element.get('docstring'):
-                        body += f"  Docstring: {element['docstring'][:100]}...\n"
+                    if element['type'] == 'function':
+                        body += f"```python\n{name}{element['signature']}\n"
+                        if element['docstring']:
+                            body += f'"""{element["docstring"]}"""\n'
+                        body += "```\n\n"
+                body += "This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.\n\n"
+                body += "Steps to Update Documentation:\n"
+                body += f"1. Review the changes in {file_path}\n"
+                body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(file_path))[0]}.md\n"
+                body += "3. Create a pull request with the documentation updates"
                 create_github_issue(title, body)
             return
         
@@ -390,11 +395,23 @@ def analyze_changes(file_path: str) -> None:
         for change in changes:
             print(f"{change['type'].title()}: {change['name']} - {change['description']}")
         
-        title = f"Documentation Update: Changes in {os.path.basename(file_path)}"
-        body = "The following API changes were detected:\n\n"
+        title = f"Documentation Update Needed for {file_path}"
+        body = f"The file {file_path} has been modified. Please review and update the documentation for the following changes:\n\n"
+        
         for change in changes:
-            body += f"- {change['type'].title()}: {change['name']}\n"
-            body += f"  {change['description']}\n\n"
+            if change['type'] == 'added' and change['name'] in current_elements:
+                element = current_elements[change['name']]
+                if element['type'] == 'function':
+                    body += f"```python\n{change['name']}{element['signature']}\n"
+                    if element['docstring']:
+                        body += f'"""{element["docstring"]}"""\n'
+                    body += "```\n\n"
+        
+        body += "This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.\n\n"
+        body += "Steps to Update Documentation:\n"
+        body += f"1. Review the changes in {file_path}\n"
+        body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(file_path))[0]}.md\n"
+        body += "3. Create a pull request with the documentation updates"
         
         create_github_issue(title, body)
         
