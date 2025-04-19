@@ -1,16 +1,34 @@
-def linear_search(arr: List[int], target: int) -> int:
+def binary_search(arr, target):
     """
-    Perform linear search on an array to find the target value.
+    Performs binary search to find target element in a sorted array
     
     Args:
-        arr (List[int]): A list of integers to search through.
-        target (int): The value to search for.
+        arr: Sorted list of numbers
+        target: Element to find
         
     Returns:
-        int: The index of the target value if found, -1 otherwise.
+        Index of target if found, -1 if not found
     """
-    for index, value in enumerate(arr):
-        if value == target:
-            return index
+    # Initialize left and right pointers
+    left = 0
+    right = len(arr) - 1
+    
+    # Keep searching while valid search space exists
+    while left <= right:
+        # Find middle element
+        mid = (left + right) // 2
+        
+        # If target found at mid, return index
+        if arr[mid] == target:
+            return mid
+            
+        # If target is greater, ignore left half
+        elif arr[mid] < target:
+            left = mid + 1
+            
+        # If target is smaller, ignore right half
+        else:
+            right = mid - 1
+            
+    # Target not found
     return -1
- 
