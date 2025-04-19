@@ -334,7 +334,12 @@ def create_github_issue(title: str, body: str) -> None:
         repo = g.get_repo(repo_name)
         print(f"Successfully connected to repository: {repo_name}")
         
-        issue = repo.create_issue(title=title, body=body)
+        # Create issue with labels
+        issue = repo.create_issue(
+            title=title,
+            body=body,
+            labels=["documentation", "help wanted", "good first issue"]
+        )
         print(f"Successfully created issue #{issue.number}: {title}")
     except Exception as e:
         print(f"ERROR: Failed to create GitHub issue: {e}")
