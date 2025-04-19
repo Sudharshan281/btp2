@@ -254,44 +254,65 @@ Please review and update the README.md file to reflect these changes.
         print(f"Title: {issue_title}")
         print(f"Body: {issue_body}")
 
-def create_api_failure_issue(py_file: str, error: str):
+def create_api_failure_issue(py_file: str, error: str) -> None:
     """Create a GitHub issue when API key fails."""
-    token, repo_name = get_env_vars()
-    if not token or not repo_name:
-        print("ERROR: Cannot create issue - missing GitHub credentials")
-        print("Would create issue with the following content:")
-        print(f"Title: API Key Failure for {os.path.basename(py_file)}")
-        print(f"Error: {error}")
+    token, repo = get_env_vars()
+    if not token or not repo:
+        print("Would create issue with content:")
+        print(f"Title: Documentation Update Needed")
+        print(f"Body: The file {py_file} has been modified. Please review and update the documentation for the following changes:\n")
+        print("This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.\n")
+        print("Steps to Update Documentation:")
+        print("1. Review the changes in {py_file}")
+        print("2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(py_file))[0]}.md")
+        print("3. Create a pull request with the documentation updates")
         return
-        
+
     try:
-        g = get_github_client()
-        if not g:
+        g = Github(token)
+        repo_obj = g.get_repo(repo)
+        
+        # Get the current content of the file
+        current_content = get_file_content(py_file)
+        if not current_content:
+            print(f"Could not get current content of {py_file}")
             return
             
-        repo = g.get_repo(repo_name)
-        print(f"Successfully connected to repository: {repo_name}")
+        # Parse the file to get function/class definitions
+        try:
+            tree = ast.parse(current_content)
+        except SyntaxError:
+            print(f"Error parsing {py_file}")
+            return
+            
+        # Extract function and class definitions
+        changes = []
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+                # Get the source code of the node
+                source = ast.get_source_segment(current_content, node)
+                if source:
+                    changes.append(source)
         
-        issue_title = f"API Key Failure for {os.path.basename(py_file)}"
-        issue_body = f"""
-The API key failed while processing changes in `{py_file}`.
-
-Error: {error}
-
-Please check the API key configuration and try again.
-"""
+        # Create the issue body
+        body = f"The file {py_file} has been modified. Please review and update the documentation for the following changes:\n\n"
+        for change in changes:
+            body += f"```python\n{change}\n```\n\n"
+            
+        body += "This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.\n\n"
+        body += "Steps to Update Documentation:\n"
+        body += f"1. Review the changes in {py_file}\n"
+        body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(py_file))[0]}.md\n"
+        body += "3. Create a pull request with the documentation updates"
         
-        repo.create_issue(
-            title=issue_title,
-            body=issue_body,
-            labels=["bug", "api"]
+        # Create the issue
+        repo_obj.create_issue(
+            title="Documentation Update Needed",
+            body=body
         )
-        print(f"Successfully created issue: {issue_title}")
+        print("Created issue for API failure")
     except Exception as e:
-        print(f"ERROR: Failed to create issue: {str(e)}")
-        print("Would create issue with the following content:")
-        print(f"Title: {issue_title}")
-        print(f"Body: {issue_body}")
+        print(f"Error creating issue: {e}")
 
 def create_github_issue(title: str, body: str) -> None:
     """Create a GitHub issue with the given title and body."""
