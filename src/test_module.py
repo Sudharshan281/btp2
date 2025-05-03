@@ -32,7 +32,7 @@ def binary_search(arr, target):
     return -1  # Target not found
 
 # Example usage
-sorted_numbers = [1, 3, 5, 7, 9, 11, 13]
+sorted_numbers = [1, 3, 5, 7, 9, 11, 13,14]
 target_value = 9
 
 # Call the binary_search function
