@@ -1,46 +1,27 @@
- # Binary Search Function
-def binary_search(arr, target):
-    """
-    Performs binary search on a sorted list to find the target element.
+class BinarySearch:
+    def __init__(self, arr):
+        self.arr = sorted(arr)  # Ensure the array is sorted
 
-    Parameters:
-    arr (list): A sorted list to search.
-    target (any): The value to search for.
+    def search(self, target):
+        left, right = 0, len(self.arr) - 1
+        while left <= right:
+            mid = (left + right) // 2
+            if self.arr[mid] == target:
+                return mid
+            elif self.arr[mid] < target:
+                left = mid + 1
+            else:
+                right = mid - 1
+        return -1  # Not found
 
-    Returns:
-    int: The index of the target if found, otherwise -1.
-    """
-    # Set the initial left and right boundaries
-    left = 0
-    right = len(arr) - 1
+# Usage
+arr = [34, 7, 23, 32, 5, 62]
+target = 23
 
-    # Loop until the search space is exhausted
-    while left <= right:
-        # Calculate the middle index
-        mid = (left + right) // 2
+bs = BinarySearch(arr)
+index = bs.search(target)
 
-        # Check if the middle element is the target
-        if arr[mid] == target:
-            return mid  # Target found at index mid
-        elif arr[mid] < target:
-            # If the target is greater, ignore the left half
-            left = mid + 1
-        else:
-            # If the target is smaller, ignore the right half
-            right = mid - 1
-
-    return -1  # Target not found
-
-# Example usage
-sorted_numbers = [1, 3, 5, 7, 9, 11, 13,14]
-unsorted_numbers = [3,8,9]
-target_value = 9
-
-# Call the binary_search function
-result = binary_search(sorted_numbers, target_value)
-
-# Print the result
-if result != -1:
-    print(f"Target found at index {result}")
+if index != -1:
+    print(f"Element {target} found at index {index}")
 else:
-    print("Target not found in the list")
+    print(f"Element {target} not found")
