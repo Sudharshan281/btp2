@@ -37,7 +37,7 @@ unsorted_numbers = [3,8,9]
 target_value = 9
 
 # Call the binary_search function
-result = binary_search(unsorted_numberssorted_numbers, target_value)
+result = binary_search(sorted_numbers, target_value)
 
 # Print the result
 if result != -1:
