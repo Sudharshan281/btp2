@@ -394,14 +394,10 @@ def check_documentation(file_path: str, content: str) -> dict:
                 # Try to parse the JSON response
                 try:
                     parsed_result = json.loads(text)
-                    return parsed_result
+                    if isinstance(parsed_result, dict) and "change_required" in parsed_result:
+                        return parsed_result
                 except json.JSONDecodeError:
-                    # If JSON parsing fails, try to extract documentation from the text
-                    if "updated_doc" in text.lower():
-                        return {
-                            "change_required": True,
-                            "updated_doc": text
-                        }
+                    print("Failed to parse JSON response from Gemini API")
             return {"change_required": True, "updated_doc": None}
         except (KeyError, IndexError) as e:
             print(f"ERROR: Failed to parse Gemini response: {e}")
@@ -452,7 +448,15 @@ def analyze_changes(file_path: str) -> None:
                 
                 if doc_check["updated_doc"]:
                     body += "Suggested documentation updates:\n\n"
-                    body += doc_check["updated_doc"]
+                    try:
+                        # Try to parse the updated_doc as JSON
+                        updated_doc = json.loads(doc_check["updated_doc"])
+                        if isinstance(updated_doc, dict) and "updated_doc" in updated_doc:
+                            body += updated_doc["updated_doc"]
+                        else:
+                            body += doc_check["updated_doc"]
+                    except json.JSONDecodeError:
+                        body += doc_check["updated_doc"]
                     body += "\n\n"
                 else:
                     body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
@@ -491,7 +495,15 @@ def analyze_changes(file_path: str) -> None:
         
         if doc_check["updated_doc"]:
             body += "Suggested documentation updates:\n\n"
-            body += doc_check["updated_doc"]
+            try:
+                # Try to parse the updated_doc as JSON
+                updated_doc = json.loads(doc_check["updated_doc"])
+                if isinstance(updated_doc, dict) and "updated_doc" in updated_doc:
+                    body += updated_doc["updated_doc"]
+                else:
+                    body += doc_check["updated_doc"]
+            except json.JSONDecodeError:
+                body += doc_check["updated_doc"]
             body += "\n\n"
         else:
             body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
