@@ -29,3 +29,19 @@ def binary_search(arr, target):
             right = mid - 1
 
     return -1  # Target not found
+
+def linear_search(arr, target):
+    """
+    Performs linear search on a list to find the target element.
+
+    Parameters:
+    arr (list): The list to search.
+    target (any): The value to search for.
+
+    Returns:
+    int: The index of the target if found, otherwise -1.
+    """
+    for i, value in enumerate(arr):
+        if value == target:
+            return i
+    return -1
