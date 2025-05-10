@@ -1,6 +1,7 @@
-def binary_search(arr, target):
+def ternary_search(arr, target):
     """
-    Performs binary search on a sorted array to find the target element.
+    Performs ternary search on a sorted array to find the target element.
+    This is more efficient than binary search as it divides the search space into three parts.
 
     Args:
         arr: A sorted list or array of elements.
@@ -9,20 +10,30 @@ def binary_search(arr, target):
     Returns:
         The index of the target element if found, otherwise -1.
     """
-    low = 0  # Initialize the lower bound of the search space
-    high = len(arr) - 1  # Initialize the upper bound of the search space
+    left = 0
+    right = len(arr) - 1
 
-    while low <= high:  # Continue searching as long as the search space is valid
-        mid = (low + high) // 2  # Calculate the middle index (integer division)
+    while left <= right:
+        # Calculate two mid points
+        mid1 = left + (right - left) // 3
+        mid2 = right - (right - left) // 3
 
-        if arr[mid] == target:
-            return mid  # Target found at the middle index
-        elif arr[mid] < target:
-            low = mid + 1  # Target is in the right half, update the lower bound
-        else:  # arr[mid] > target
-            high = mid - 1  # Target is in the left half, update the upper bound
+        # Check if target is at either mid point
+        if arr[mid1] == target:
+            return mid1
+        if arr[mid2] == target:
+            return mid2
 
-    return -1  # Target not found in the array
+        # Update search space based on target's position
+        if target < arr[mid1]:
+            right = mid1 - 1
+        elif target > arr[mid2]:
+            left = mid2 + 1
+        else:
+            left = mid1 + 1
+            right = mid2 - 1
+
+    return -1  # Target not found
 
 def insertion_sort(arr):
     """
