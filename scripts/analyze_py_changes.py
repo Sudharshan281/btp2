@@ -5,6 +5,7 @@ import subprocess
 import json
 from typing import List, Dict, Any, Set, Optional, Tuple
 from github import Github
+from openai import OpenAI
 
 def get_env_vars() -> Tuple[Optional[str], Optional[str]]:
     """Get GitHub token and repository name from environment variables."""
@@ -472,6 +473,30 @@ def analyze_changes(file_path: str) -> None:
             f"Error: Failed to analyze {os.path.basename(file_path)}",
             f"Error message: {error_msg}\n\nPlease check the file and try again."
         )
+
+def get_openai_client() -> Optional[OpenAI]:
+    """Get authenticated OpenAI client."""
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("ERROR: OPENAI_API_KEY environment variable is not set")
+        return None
+    
+    try:
+        return OpenAI(api_key=api_key)
+    except Exception as e:
+        print(f"ERROR: Failed to create OpenAI client: {e}")
+        return None
+
+def get_current_documentation(file_path: str) -> str:
+    """Get current documentation from the API folder."""
+    doc_path = f"src/api/{os.path.splitext(os.path.basename(file_path))[0]}.md"
+    try:
+        if os.path.exists(doc_path):
+            with open(doc_path, 'r', encoding='utf-8') as f:
+                return f.read()
+    except Exception as e:
+        print(f"Error reading documentation: {e}")
+    return "No existing documentation found."
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

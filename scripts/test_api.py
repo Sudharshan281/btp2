@@ -1,10 +1,10 @@
-import openai
+from openai import OpenAI
 import os
 
 def test_api_key():
     try:
-        openai.api_key = os.getenv('OPENAI_API_KEY')
-        response = openai.ChatCompletion.create(
+        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "user", "content": "Say 'API key is working' if you can read this."}
