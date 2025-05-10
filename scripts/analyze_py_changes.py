@@ -363,10 +363,10 @@ def check_documentation(file_path: str, content: str) -> dict:
             print("WARNING: Gemini API key not available, skipping documentation check")
             return {"change_required": True, "updated_doc": None}
             
-        prompt = f"""Analyze the following Python code and determine if documentation needs to be updated.
+        prompt = f"""Analyze the following Python code and suggest improved documentation.
         Return a JSON response with two fields:
         1. change_required: boolean indicating if documentation needs to be updated
-        2. updated_doc: string containing the updated documentation if change_required is true, null otherwise
+        2. updated_doc: string containing the suggested documentation if change_required is true, null otherwise
 
         Code:
         {content}
@@ -388,9 +388,22 @@ def check_documentation(file_path: str, content: str) -> dict:
         response.raise_for_status()
         
         try:
-            result = json.loads(response.json()['candidates'][0]['content']['parts'][0]['text'])
-            return result
-        except (json.JSONDecodeError, KeyError) as e:
+            result = response.json()
+            if 'candidates' in result and len(result['candidates']) > 0:
+                text = result['candidates'][0]['content']['parts'][0]['text']
+                # Try to parse the JSON response
+                try:
+                    parsed_result = json.loads(text)
+                    return parsed_result
+                except json.JSONDecodeError:
+                    # If JSON parsing fails, try to extract documentation from the text
+                    if "updated_doc" in text.lower():
+                        return {
+                            "change_required": True,
+                            "updated_doc": text
+                        }
+            return {"change_required": True, "updated_doc": None}
+        except (KeyError, IndexError) as e:
             print(f"ERROR: Failed to parse Gemini response: {e}")
             return {"change_required": True, "updated_doc": None}
             
@@ -436,7 +449,14 @@ def analyze_changes(file_path: str) -> None:
                         if element['docstring']:
                             body += f'"""{element["docstring"]}"""\n'
                         body += "```\n\n"
-                body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
+                
+                if doc_check["updated_doc"]:
+                    body += "Suggested documentation updates:\n\n"
+                    body += doc_check["updated_doc"]
+                    body += "\n\n"
+                else:
+                    body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
+                
                 body += "Steps to Update Documentation:\n"
                 body += f"1. Review the changes in {file_path}\n"
                 body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(file_path))[0]}.md\n"
@@ -469,7 +489,13 @@ def analyze_changes(file_path: str) -> None:
                         body += f'"""{element["docstring"]}"""\n'
                     body += "```\n\n"
         
-        body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
+        if doc_check["updated_doc"]:
+            body += "Suggested documentation updates:\n\n"
+            body += doc_check["updated_doc"]
+            body += "\n\n"
+        else:
+            body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
+        
         body += "Steps to Update Documentation:\n"
         body += f"1. Review the changes in {file_path}\n"
         body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(file_path))[0]}.md\n"
