@@ -6,8 +6,6 @@ import json
 from typing import List, Dict, Any, Set, Optional, Tuple
 from github import Github
 from openai import OpenAI
-import re
-import openai
 
 def get_env_vars() -> Tuple[Optional[str], Optional[str]]:
     """Get GitHub token and repository name from environment variables."""
