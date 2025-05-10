@@ -35,6 +35,64 @@ def ternary_search(arr, target):
 
     return -1  # Target not found
 
+def merge_sort(arr):
+    """
+    Sorts a list using the merge sort algorithm.
+    This is a divide-and-conquer algorithm that recursively splits the array
+    into smaller subarrays until they are of size 1, then merges them back
+    together in sorted order.
+
+    Args:
+        arr: A list of comparable elements.
+
+    Returns:
+        A new sorted list containing the elements from the input array.
+    """
+    if len(arr) <= 1:
+        return arr
+
+    # Divide the array into two halves
+    mid = len(arr) // 2
+    left = arr[:mid]
+    right = arr[mid:]
+
+    # Recursively sort the two halves
+    left = merge_sort(left)
+    right = merge_sort(right)
+
+    # Merge the sorted halves
+    return merge(left, right)
+
+def merge(left, right):
+    """
+    Merges two sorted lists into a single sorted list.
+
+    Args:
+        left: A sorted list of comparable elements.
+        right: A sorted list of comparable elements.
+
+    Returns:
+        A new sorted list containing all elements from both input lists.
+    """
+    result = []
+    i = j = 0
+
+    # Compare elements from both lists and merge them in sorted order
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+
+    # Add remaining elements from left list
+    result.extend(left[i:])
+    # Add remaining elements from right list
+    result.extend(right[j:])
+
+    return result
+
 def insertion_sort(arr):
     """
     Sorts a list in-place using the insertion sort algorithm.
