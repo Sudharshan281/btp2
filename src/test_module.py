@@ -53,15 +53,40 @@ def calculate_fibonacci(n: int) -> int:
         a, b = b, a + b
     return b
 
+def calculate_power(base: float, exponent: float) -> float:
+    """
+    Calculate the power of a number.
+    
+    Args:
+        base (float): The base number
+        exponent (float): The exponent
+        
+    Returns:
+        float: The result of base raised to the power of exponent
+    """
+    return base ** exponent
+
+def calculate_factorial(n: int) -> int:
+    """
+    Calculate the factorial of a number.
+    
+    Args:
+        n (int): The number to calculate factorial for
+        
+    Returns:
+        int: The factorial of n
+        
+    Raises:
+        ValueError: If n is negative
+    """
+    if n < 0:
+        raise ValueError("Factorial is not defined for negative numbers")
+    if n == 0:
+        return 1
+    return n * calculate_factorial(n - 1)
+
 # Example usage
 sorted_numbers = [1, 3, 5, 7, 9, 11, 13]
-target_value = 9
-
-# Call the binary_search function
-result = binary_search(sorted_numbers, target_value)
-
-# Print the result
-if result != -1:
-    print(f"Target found at index {result}")
-else:
-    print("Target not found in the list")
+target = 7
+result = binary_search(sorted_numbers, target)
+print(f"Found {target} at index {result}")  # Output: Found 7 at index 3
