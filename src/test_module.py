@@ -1,4 +1,4 @@
- # Binary Search Function
+# Binary Search Function
 def binary_search(arr, target):
     """
     Performs binary search on a sorted list to find the target element.
@@ -30,6 +30,28 @@ def binary_search(arr, target):
             right = mid - 1
 
     return -1  # Target not found
+
+def calculate_fibonacci(n: int) -> int:
+    """
+    Calculate the nth Fibonacci number.
+    
+    Args:
+        n (int): The position in the Fibonacci sequence (0-based)
+        
+    Returns:
+        int: The nth Fibonacci number
+        
+    Raises:
+        ValueError: If n is negative
+    """
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    if n <= 1:
+        return n
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b
 
 # Example usage
 sorted_numbers = [1, 3, 5, 7, 9, 11, 13]

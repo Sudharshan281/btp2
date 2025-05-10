@@ -2,6 +2,7 @@ import ast
 import os
 import sys
 import subprocess
+import json
 from typing import List, Dict, Any, Set, Optional, Tuple
 from github import Github
 
@@ -347,6 +348,44 @@ def create_github_issue(title: str, body: str) -> None:
         print(f"Title: {title}")
         print(f"Body:\n{body}")
 
+def check_documentation(file_path: str, content: str) -> dict:
+    """Check if documentation needs to be updated using OpenAI API."""
+    try:
+        client = get_openai_client()
+        if not client:
+            print("WARNING: OpenAI client not available, skipping documentation check")
+            return {"change_required": True, "updated_doc": None}
+            
+        prompt = f"""Analyze the following Python code and determine if documentation needs to be updated.
+        Return a JSON response with two fields:
+        1. change_required: boolean indicating if documentation needs to be updated
+        2. updated_doc: string containing the updated documentation if change_required is true, null otherwise
+
+        Code:
+        {content}
+
+        Current documentation:
+        {get_current_documentation(file_path)}
+
+        Return only the JSON response, no other text."""
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1
+        )
+        
+        try:
+            result = json.loads(response.choices[0].message.content)
+            return result
+        except json.JSONDecodeError:
+            print("ERROR: Failed to parse LLM response as JSON")
+            return {"change_required": True, "updated_doc": None}
+            
+    except Exception as e:
+        print(f"ERROR: Failed to check documentation: {e}")
+        return {"change_required": True, "updated_doc": None}
+
 def analyze_changes(file_path: str) -> None:
     """Analyze changes between current and previous versions of a file."""
     if not file_path or not isinstance(file_path, str):
@@ -366,6 +405,12 @@ def analyze_changes(file_path: str) -> None:
             )
             return
         
+        # Check if documentation needs to be updated
+        doc_check = check_documentation(file_path, current_content)
+        if not doc_check["change_required"]:
+            print("No documentation changes required")
+            return
+            
         previous_content = get_previous_content(file_path)
         if not previous_content:
             print(f"No previous version found for {file_path}, treating as new file")
