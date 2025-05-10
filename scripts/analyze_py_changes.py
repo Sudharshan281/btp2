@@ -349,6 +349,19 @@ def create_github_issue(title: str, body: str) -> None:
         print(f"Title: {title}")
         print(f"Body:\n{body}")
 
+def get_openai_client() -> Optional[OpenAI]:
+    """Get authenticated OpenAI client."""
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        print("ERROR: OPENAI_API_KEY environment variable is not set")
+        return None
+
+    try:
+        return OpenAI(api_key=api_key)
+    except Exception as e:
+        print(f"ERROR: Failed to create OpenAI client: {e}")
+        return None
+
 def check_documentation(file_path: str, content: str) -> dict:
     """Check if documentation needs to be updated using OpenAI API."""
     try:
@@ -473,19 +486,6 @@ def analyze_changes(file_path: str) -> None:
             f"Error: Failed to analyze {os.path.basename(file_path)}",
             f"Error message: {error_msg}\n\nPlease check the file and try again."
         )
-
-def get_openai_client() -> Optional[OpenAI]:
-    """Get authenticated OpenAI client."""
-    api_key = os.getenv('OPENAI_API_KEY')
-    if not api_key:
-        print("ERROR: OPENAI_API_KEY environment variable is not set")
-        return None
-    
-    try:
-        return OpenAI(api_key=api_key)
-    except Exception as e:
-        print(f"ERROR: Failed to create OpenAI client: {e}")
-        return None
 
 def get_current_documentation(file_path: str) -> str:
     """Get current documentation from the API folder."""

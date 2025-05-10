@@ -1,25 +1,30 @@
-import openai
 import os
+import sys
+from openai import OpenAI
 
-def test_api_key():
+def test_openai_api():
+    """Test if the OpenAI API key is working."""
+    print("Testing OpenAI API key...")
+    
+    # Initialize the OpenAI client
+    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    
     try:
-        openai.api_key = os.getenv('OPENAI_API_KEY')
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
+        # Make a simple API call
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
             messages=[
-                {"role": "user", "content": "write a haiku about ai"}
-            ],
-            store=True
+                {"role": "user", "content": "Write a haiku about programming."}
+            ]
         )
+        
+        # Print the response
         print("API Response:", response.choices[0].message.content)
-        return True
+        print("✅ API key is working!")
+        
     except Exception as e:
-        print("Error:", str(e))
-        return False
+        print(f"❌ Error testing API key: {str(e)}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    print("Testing OpenAI API key...")
-    if test_api_key():
-        print("✅ API key is working!")
-    else:
-        print("❌ API key is not working!") 
+    test_openai_api() 
