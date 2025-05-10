@@ -436,7 +436,7 @@ def analyze_changes(file_path: str) -> None:
                         if element['docstring']:
                             body += f'"""{element["docstring"]}"""\n'
                         body += "```\n\n"
-                body += "This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.\n\n"
+                body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
                 body += "Steps to Update Documentation:\n"
                 body += f"1. Review the changes in {file_path}\n"
                 body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(file_path))[0]}.md\n"
@@ -469,7 +469,7 @@ def analyze_changes(file_path: str) -> None:
                         body += f'"""{element["docstring"]}"""\n'
                     body += "```\n\n"
         
-        body += "This is an automated issue created because the OpenAI API key is not available. Please manually update the documentation as needed.\n\n"
+        body += "This is an automated issue created because the documentation could not be updated automatically using the Gemini API. Please manually update the documentation as needed.\n\n"
         body += "Steps to Update Documentation:\n"
         body += f"1. Review the changes in {file_path}\n"
         body += f"2. Update the corresponding documentation in src/api/{os.path.splitext(os.path.basename(file_path))[0]}.md\n"
