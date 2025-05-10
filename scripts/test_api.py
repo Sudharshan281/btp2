@@ -8,6 +8,7 @@ def test_openai_api():
     
     # Initialize the OpenAI client
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    print(client, "client")
     
     try:
         # Make a simple API call
