@@ -3,9 +3,9 @@ import os
 import sys
 import subprocess
 import json
+import requests
 from typing import List, Dict, Any, Set, Optional, Tuple
 from github import Github
-from openai import OpenAI
 
 def get_env_vars() -> Tuple[Optional[str], Optional[str]]:
     """Get GitHub token and repository name from environment variables."""
@@ -347,25 +347,20 @@ def create_github_issue(title: str, body: str) -> None:
         print(f"Title: {title}")
         print(f"Body:\n{body}")
 
-def get_openai_client() -> Optional[OpenAI]:
-    """Get authenticated OpenAI client."""
-    api_key = os.getenv('OPENAI_API_KEY')
+def get_gemini_client() -> Optional[str]:
+    """Get Gemini API key from environment variables."""
+    api_key = os.getenv('GEMINI_API_KEY')
     if not api_key:
-        print("ERROR: OPENAI_API_KEY environment variable is not set")
+        print("ERROR: GEMINI_API_KEY environment variable is not set")
         return None
-
-    try:
-        return OpenAI(api_key=api_key)
-    except Exception as e:
-        print(f"ERROR: Failed to create OpenAI client: {e}")
-        return None
+    return api_key
 
 def check_documentation(file_path: str, content: str) -> dict:
-    """Check if documentation needs to be updated using OpenAI API."""
+    """Check if documentation needs to be updated using Gemini API."""
     try:
-        client = get_openai_client()
-        if not client:
-            print("WARNING: OpenAI client not available, skipping documentation check")
+        api_key = get_gemini_client()
+        if not api_key:
+            print("WARNING: Gemini API key not available, skipping documentation check")
             return {"change_required": True, "updated_doc": None}
             
         prompt = f"""Analyze the following Python code and determine if documentation needs to be updated.
@@ -381,17 +376,22 @@ def check_documentation(file_path: str, content: str) -> dict:
 
         Return only the JSON response, no other text."""
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1
-        )
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
         
         try:
-            result = json.loads(response.choices[0].message.content)
+            result = json.loads(response.json()['candidates'][0]['content']['parts'][0]['text'])
             return result
-        except json.JSONDecodeError:
-            print("ERROR: Failed to parse LLM response as JSON")
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"ERROR: Failed to parse Gemini response: {e}")
             return {"change_required": True, "updated_doc": None}
             
     except Exception as e:
