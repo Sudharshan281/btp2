@@ -85,6 +85,22 @@ def calculate_factorial(n: int) -> int:
         return 1
     return n * calculate_factorial(n - 1)
 
+def linear_search(arr, target):
+    """
+    Performs linear search on a list to find the target element.
+
+    Parameters:
+    arr (list): The list to search.
+    target (any): The value to search for.
+
+    Returns:
+    int: The index of the target if found, otherwise -1.
+    """
+    for i, value in enumerate(arr):
+        if value == target:
+            return i
+    return -1
+
 # Example usage
 sorted_numbers = [1, 3, 5, 7, 9, 11, 13]
 target = 7
