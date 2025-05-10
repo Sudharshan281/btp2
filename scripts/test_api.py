@@ -1,10 +1,10 @@
-from openai import OpenAI
+import openai
 import os
 
 def test_api_key():
     try:
-        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        response = client.chat.completions.create(
+        openai.api_key = os.getenv('OPENAI_API_KEY')
+        response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": "write a haiku about ai"}
